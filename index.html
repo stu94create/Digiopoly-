@@ -1005,9 +1005,20 @@ function pieceFor(player) {
 // ============================================================
 
 let state = null;
+// Monotonic session id. Bumped on every new game / abandon / resume so stale
+// setTimeout chains from a previous game can detect they're orphaned and bail
+// out without touching the new state. Each fresh state stamps _sessionId at
+// creation; async entry points compare it against the live session below.
+let _gameSession = 0;
+function bumpSession() { _gameSession++; return _gameSession; }
+function stateAlive() {
+  return !!state && state._sessionId === _gameSession;
+}
 
 function defaultState() {
   return {
+    _sessionId: bumpSession(),
+    _schemaVersion: SAVE_SCHEMA_VERSION,
     players: [],
     currentIdx: 0,
     dice: [0, 0],
@@ -1173,6 +1184,7 @@ function sfxCard() { tone(700, 0.08, 'triangle', 0.14); }
 // ============================================================
 
 const SAVE_KEY = 'pity-corner-save';
+const SAVE_SCHEMA_VERSION = 1;
 
 function saveGame() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {}
@@ -1182,7 +1194,14 @@ function loadGame() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw);
+    const s = JSON.parse(raw);
+    // Reject saves from incompatible schemas — old shapes silently feed
+    // undefineds into game logic (e.g. NaN money via missing multipliers).
+    if (!s || typeof s !== 'object') return null;
+    if (s._schemaVersion !== SAVE_SCHEMA_VERSION) return null;
+    if (!Array.isArray(s.players) || s.players.length === 0) return null;
+    if (typeof s.currentIdx !== 'number' || !s.houseRules) return null;
+    return s;
   } catch (e) { return null; }
 }
 
@@ -1190,7 +1209,10 @@ function clearSave() {
   try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
 }
 
-function hasSave() { return !!localStorage.getItem(SAVE_KEY); }
+function hasSave() {
+  // Validate before advertising — a stale-schema save shouldn't show "Resume".
+  return !!loadGame();
+}
 
 // ============================================================
 // LOG / ANNOUNCE
@@ -1308,6 +1330,7 @@ function renderSetup() {
 }
 
 function startGame() {
+  resetTransientGlobals();
   const num = parseInt(document.getElementById('num-players').value, 10);
   state = defaultState();
   state.houseRules.freeParkingJackpot = document.getElementById('hr-free-parking').checked;
@@ -1332,10 +1355,37 @@ function startGame() {
 function resumeGame() {
   const s = loadGame();
   if (!s) return;
+  resetTransientGlobals();
+  // Re-stamp session id so the resumed game owns the live token.
+  s._sessionId = bumpSession();
   state = s;
   showScreen('game-screen');
   renderGame();
-  if (currentPlayer().isAI && state.turnPhase !== 'gameover') aiNext(aiTakeTurn);
+  // Re-drive any in-flight async flows that were captured in the save but
+  // whose modals/timers don't survive a reload.
+  if (state._auction) {
+    setTimeout(runAuctionTurn, 400);
+  } else if (state._awaitingRescue) {
+    const p = currentPlayer();
+    if (p && p.money < 0) showRescueModal(p);
+  } else if (state._aiInitiatedTrade) {
+    // The trade modal is gone; drop the flag and let the AI continue its turn.
+    state._aiInitiatedTrade = null;
+    if (currentPlayer().isAI && !state.gameOver) aiNext(aiTakeTurn);
+  } else if (currentPlayer().isAI && !state.gameOver) {
+    aiNext(aiTakeTurn);
+  }
+}
+
+// Reset module-level globals that survive a `state = null` reset and would
+// otherwise leak into a new game (stale callbacks, queued announcements).
+function resetTransientGlobals() {
+  bumpSession();
+  _announceQueue = [];
+  _announceActive = false;
+  _announceIdleCallbacks = [];
+  _lastAnnounceMsg = '';
+  _lastAnnounceTime = 0;
 }
 
 // ============================================================
@@ -1609,6 +1659,8 @@ function doDiceRoll() {
       state.doubleCount = 0;
       renderGame();
       saveGame();
+      // Schedule continuation so AI turns don't softlock here.
+      setTimeout(continueAfterAction, pace());
       return;
     }
   } else {
@@ -1650,6 +1702,7 @@ function movePlayer(p, steps) {
 }
 
 function landOnSpace(p) {
+  if (!stateAlive()) return;
   const space = BOARD[p.position];
   announce(p.name + ' landed on ' + space.name + '.');
 
@@ -1685,6 +1738,10 @@ function landOnSpace(p) {
 function handlePropertyLanding(p, space) {
   const owner = findOwner(p.position);
   if (!owner) {
+    // No rent to compute — but a card may have set pending-rent flags before
+    // sending us here. Clear them so they don't bleed into a later landing.
+    state._pendingRentMultiplier = false;
+    state._pendingUtilityTenTimes = false;
     // Offer to buy
     if (p.isAI) {
       aiDecideBuy(p, space);
@@ -1692,7 +1749,9 @@ function handlePropertyLanding(p, space) {
       showBuyModal(p, space);
     }
   } else if (owner.id === p.id) {
-    // Own property — nothing happens
+    // Own property — nothing happens, but clear pending-rent flags (see above)
+    state._pendingRentMultiplier = false;
+    state._pendingUtilityTenTimes = false;
     state.turnPhase = 'action';
     renderGame();
     saveGame();
@@ -1705,6 +1764,9 @@ function handlePropertyLanding(p, space) {
 
 function payRent(p, owner, space) {
   if (owner.mortgaged.includes(p.position)) {
+    // No rent — but clear pending-rent flags so they don't outlive this landing.
+    state._pendingRentMultiplier = false;
+    state._pendingUtilityTenTimes = false;
     announce(space.name + ' is mortgaged — no rent due.');
     state.turnPhase = 'action';
     renderGame();
@@ -1788,9 +1850,11 @@ function handleTax(p, space) {
 }
 
 function transferMoney(from, to, amount, reason) {
-  const paid = Math.min(amount, from.money);
-  from.money -= paid;
-  if (to) to.money += paid;
+  // Debt the full amount so a negative balance triggers rescue/bankruptcy.
+  // The creditor receives the full amount up front; if `from` goes bust,
+  // any residual passes to the creditor inside doBankrupt.
+  from.money -= amount;
+  if (to) to.money += amount;
   if (from === currentPlayer()) sfxMoneyOut();
   announce(from.name + ' paid ' + (to ? to.name : 'the bank') + ' ' + fmtMoney(amount) + (reason ? ' (' + reason + ')' : '') + '.');
   if (from.money < 0) {
@@ -1871,9 +1935,20 @@ function doBankrupt(p, creditor) {
   p.bankrupt = true;
   announce(p.name + ' is bankrupt.');
   if (creditor) {
-    for (const pos of p.properties) creditor.properties.push(pos);
-    creditor.money += Math.max(0, p.money);
+    // If the bankruptcy was triggered by a payment to this creditor,
+    // transferMoney already credited them optimistically. p.money is
+    // negative by exactly the shortfall — refund that overpayment so the
+    // creditor ends up with what the bankrupt player could actually cover.
+    if (p.money < 0) creditor.money += p.money;
+    for (const pos of p.properties) {
+      creditor.properties.push(pos);
+      // Mortgaged properties transfer in their mortgaged state.
+      if (p.mortgaged.includes(pos) && !creditor.mortgaged.includes(pos)) {
+        creditor.mortgaged.push(pos);
+      }
+    }
   }
+  p.money = 0;
   p.properties = [];
   p.mortgaged = [];
   p.houses = {};
@@ -2014,6 +2089,11 @@ function checkWinner() {
     state.gameOver = true;
     state.winner = alive.length === 1 ? alive[0].name : 'Nobody';
     announce('Game over. Winner: ' + state.winner);
+    // Push the game-over banner into the action area immediately rather than
+    // waiting for the next scheduled tick (which may not arrive if the
+    // bankruptcy ended an AI turn).
+    renderGame();
+    saveGame();
   }
 }
 
@@ -2181,6 +2261,7 @@ function describeOffer(offer) {
 }
 
 function showHandoffThenOffer(offer) {
+  if (!stateAlive()) return;
   const recipient = state.players.find(x => x.id === offer.recipientId);
   openModal({
     title: 'Pass to ' + recipient.name,
@@ -2214,11 +2295,29 @@ function acceptTradeOffer(offer) {
   const proposer = state.players.find(x => x.id === offer.proposerId);
   const recipient = state.players.find(x => x.id === offer.recipientId);
 
-  // Re-validate (state may have shifted)
+  // Re-validate (state may have shifted between offer and accept)
+  if (!proposer || !recipient || proposer.bankrupt || recipient.bankrupt) {
+    announce('Trade no longer valid — a player has dropped out.');
+    closeModal();
+    resumeAfterAITrade();
+    return;
+  }
   if (offer.fromProposer.money > proposer.money || offer.fromRecipient.money > recipient.money ||
       offer.fromProposer.jailCards > proposer.getOutCards || offer.fromRecipient.jailCards > recipient.getOutCards) {
     announce('Trade no longer valid — funds or cards changed.');
     closeModal();
+    resumeAfterAITrade();
+    return;
+  }
+  // Ownership re-check: every offered property must still belong to the
+  // giving side, and the colour group must still be unbuilt.
+  const ownershipOk =
+    offer.fromProposer.props.every(pos => proposer.properties.includes(pos) && canTradeProperty(pos)) &&
+    offer.fromRecipient.props.every(pos => recipient.properties.includes(pos) && canTradeProperty(pos));
+  if (!ownershipOk) {
+    announce('Trade no longer valid — a property has moved or been built on.');
+    closeModal();
+    resumeAfterAITrade();
     return;
   }
 
@@ -2277,9 +2376,25 @@ function resumeAfterAITrade() {
 }
 
 function aiHandleTradeOffer(offer) {
+  if (!stateAlive()) return;
   const ai = state.players.find(x => x.id === offer.recipientId);
   const decision = aiEvaluateTradeOffer(ai, offer);
   const desc = describeOffer(offer);
+  // If the proposer is also an AI, nobody will click the modal button —
+  // auto-resolve so the game doesn't stall on cross-AI negotiations.
+  const proposer = state.players.find(x => x.id === offer.proposerId);
+  if (proposer && proposer.isAI) {
+    openModal({
+      title: ai.name + ' considers the offer',
+      body: desc + '<p><em>' + escapeHtml(ai.name) + ' is thinking…</em></p>',
+      actions: []
+    });
+    setTimeout(() => {
+      if (decision.accept) acceptTradeOffer(offer);
+      else rejectTradeOffer(offer);
+    }, 1200);
+    return;
+  }
   openModal({
     title: ai.name + ' considers the offer',
     body: desc + '<p><em>' + escapeHtml(ai.name) + ' is thinking…</em></p>',
@@ -2447,6 +2562,7 @@ function buyProperty(p, space) {
   sfxBuy();
   announce(p.name + ' bought ' + space.name + ' for ' + fmtMoney(space.price) + '.');
   closeModal();
+  if (p.money < 0) checkBankruptcy(p, null);
   state.turnPhase = 'action';
   renderGame();
   saveGame();
@@ -2475,6 +2591,7 @@ function declineProperty(p, space) {
 // bidders, each can raise or pass. Last bidder standing wins at their bid.
 // If nobody bids, the property stays with the bank.
 function startAuction(lander, space) {
+  if (!stateAlive()) return;
   const pos = space.pos;
   // Rotate bidders so the player to the lander's left goes first
   const live = state.players.filter(x => !x.bankrupt);
@@ -2493,6 +2610,7 @@ function startAuction(lander, space) {
 }
 
 function runAuctionTurn() {
+  if (!stateAlive()) return;
   const a = state._auction;
   if (!a) return;
   // Auction ends when only one active bidder remains (and they've made at
@@ -2594,22 +2712,35 @@ function passBid(bidderId) {
 }
 
 function aiAuctionTurn(ai) {
+  if (!stateAlive()) return;
   const a = state._auction;
+  if (!a) return;
   const space = BOARD[a.pos];
   // Max value the AI will pay: based on price and cash reserve.
-  // More aggressive if they need the property (would complete a colour set).
+  // More aggressive if they need the property (would complete a colour set,
+  // station set, or utility set).
   const wouldComplete = (() => {
-    if (space.type !== 'property') return false;
-    const groupOwned = state.players.find(pl => pl.id === ai.id).properties
-      .filter(pos => BOARD[pos].group === space.group).length;
-    const groupTotal = BOARD.filter(b => b.group === space.group).length;
-    return groupOwned === groupTotal - 1;
+    if (space.type === 'property') {
+      const groupOwned = ai.properties.filter(pos => BOARD[pos].group === space.group).length;
+      const groupTotal = GROUPS[space.group] ? GROUPS[space.group].length : 0;
+      return groupTotal > 0 && groupOwned === groupTotal - 1;
+    }
+    if (space.type === 'station') {
+      return STATIONS.filter(s => ai.properties.includes(s)).length === STATIONS.length - 1;
+    }
+    if (space.type === 'utility') {
+      return UTILITIES.filter(u => ai.properties.includes(u)).length === UTILITIES.length - 1;
+    }
+    return false;
   })();
   let maxPay = Math.floor(space.price * (wouldComplete ? 1.4 : 0.9));
   // Cap at half the AI's cash so it doesn't ruin itself
   maxPay = Math.min(maxPay, Math.floor(ai.money * 0.5));
   // Small jitter
   maxPay += Math.floor((Math.random() - 0.5) * 30);
+  // Hard cap at the AI's actual cash — otherwise placeBid will reject the
+  // bid and the auction wedges (placeBid doesn't advance currentIdx on failure).
+  maxPay = Math.min(maxPay, ai.money);
 
   if (a.highBid >= maxPay) {
     passBid(ai.id);
@@ -2618,7 +2749,7 @@ function aiAuctionTurn(ai) {
   // Bid the smallest increment above current high
   const inc = a.highBid === 0 ? 10 : Math.max(5, Math.floor(a.highBid * 0.1));
   const bid = Math.min(a.highBid + inc, maxPay);
-  if (bid <= a.highBid) {
+  if (bid <= a.highBid || bid > ai.money) {
     passBid(ai.id);
     return;
   }
@@ -2626,15 +2757,21 @@ function aiAuctionTurn(ai) {
 }
 
 function finishAuction() {
+  if (!stateAlive()) return;
   const a = state._auction;
   if (!a) return;
   const space = BOARD[a.pos];
   if (a.highBidderId != null && a.highBid > 0) {
     const winner = state.players.find(x => x.id === a.highBidderId);
-    winner.money -= a.highBid;
-    winner.properties.push(a.pos);
-    sfxBuy();
-    announce(winner.name + ' won ' + space.name + ' at auction for ' + fmtMoney(a.highBid) + '.');
+    if (winner && !winner.bankrupt) {
+      winner.money -= a.highBid;
+      winner.properties.push(a.pos);
+      sfxBuy();
+      announce(winner.name + ' won ' + space.name + ' at auction for ' + fmtMoney(a.highBid) + '.');
+      if (winner.money < 0) checkBankruptcy(winner, null);
+    } else {
+      announce(space.name + ' received no valid bids and stays unowned.');
+    }
   } else {
     announce(space.name + ' received no bids and stays unowned.');
   }
@@ -2660,6 +2797,7 @@ function drawCard(deckName, p) {
 }
 
 function applyCardEffect(p, card, opts) {
+  if (!stateAlive()) return;
   const e = card.effect;
   const suppressContinue = !!(opts && opts.suppressContinue);
   switch (e.type) {
@@ -2676,6 +2814,12 @@ function applyCardEffect(p, card, opts) {
         }
       }
       p.position = e.pos;
+      // Re-roll dice if landing on a utility so rent isn't computed from the
+      // pre-card roll. Monopoly rule: utility rent = dice × multiplier.
+      if (BOARD[e.pos] && BOARD[e.pos].type === 'utility') {
+        state.dice = [rollDie(), rollDie()];
+        renderDice();
+      }
       renderGame();
       setTimeout(() => landOnSpace(p), pace());
       return;
@@ -2742,6 +2886,11 @@ function applyCardEffect(p, card, opts) {
     }
     case 'BACK_3': {
       p.position = (p.position - 3 + 40) % 40;
+      // Re-roll dice if landing on a utility (see GOTO above).
+      if (BOARD[p.position] && BOARD[p.position].type === 'utility') {
+        state.dice = [rollDie(), rollDie()];
+        renderDice();
+      }
       renderGame();
       setTimeout(() => landOnSpace(p), pace());
       return;
@@ -2760,13 +2909,15 @@ function applyCardEffect(p, card, opts) {
       const others = state.players.filter(x => !x.bankrupt && x.id !== p.id);
       let total = 0;
       for (const o of others) {
-        const give = Math.min(o.money, e.amount);
-        o.money -= give;
-        total += give;
+        o.money -= e.amount;
+        total += e.amount;
       }
       p.money += total;
       sfxMoneyIn();
       announce(p.name + ' collected ' + fmtMoney(e.amount) + ' from each player (total ' + fmtMoney(total) + ').');
+      for (const o of others) {
+        if (o.money < 0) checkBankruptcy(o, p);
+      }
       break;
     }
     case 'COLLECT_NEXT': {
@@ -2989,6 +3140,7 @@ function useGetOutCard() {
 // ============================================================
 
 function continueAfterAction() {
+  if (!stateAlive()) return;
   // If a manual rescue modal is open, don't progress the turn until it resolves.
   if (state._awaitingRescue) return;
   // If player rolled doubles and is not in jail, allow another roll
@@ -3000,7 +3152,10 @@ function continueAfterAction() {
 }
 
 function endTurn() {
+  if (!stateAlive()) return;
   if (state.gameOver) return;
+  // Defensive: never spin forever if every player is somehow bankrupt.
+  if (alivePlayers().length === 0) { state.gameOver = true; renderGame(); return; }
   state.doubleCount = 0;
   state.dice = [0, 0];
   // Reset per-turn AI flags so the next turn starts fresh
@@ -3045,6 +3200,7 @@ function showHandoffModal(next) {
 // ============================================================
 
 function aiTakeTurn() {
+  if (!stateAlive()) return;
   const p = currentPlayer();
   if (!p.isAI || state.gameOver) return;
   // Once per turn: consider proposing a trade before rolling.
@@ -3076,6 +3232,7 @@ function aiTakeTurn() {
 }
 
 function aiContinue() {
+  if (!stateAlive()) return;
   const p = currentPlayer();
   if (!p.isAI || state.gameOver) return;
   if (state.doubleCount > 0 && !p.inJail && state.turnPhase === 'action') {
@@ -3345,7 +3502,19 @@ function actBuildHouse(pos) {
 function actBuildHotel(pos) {
   const p = currentPlayer();
   const space = BOARD[pos];
+  if (!playerOwnsFullGroup(p, space.group)) return;
+  if (p.mortgaged.includes(pos)) return;
   if ((p.houses[pos] || 0) !== 4) return;
+  // Even-build rule: every other property in the group must also have 4
+  // houses (or a hotel) before this one can be upgraded.
+  const groupOk = GROUPS[space.group].every(gpos =>
+    p.hotels[gpos] || (p.houses[gpos] || 0) === 4
+  );
+  if (!groupOk) {
+    announce('Even build rule: every property in the set needs 4 houses first.');
+    openPortfolio();
+    return;
+  }
   if (p.money < space.houseCost) return;
   p.money -= space.houseCost;
   p.houses[pos] = 0;
@@ -3524,6 +3693,7 @@ function openSettings() {
           actions: [
             { text: 'Yes, abandon and restart', primary: true, action: () => {
               clearSave();
+              resetTransientGlobals();
               state = null;
               closeModal();
               showScreen('setup-screen');
@@ -3546,6 +3716,7 @@ function toggleSound(on) {
 
 function endGameToSetup() {
   clearSave();
+  resetTransientGlobals();
   state = null;
   showScreen('setup-screen');
   renderSetup();
