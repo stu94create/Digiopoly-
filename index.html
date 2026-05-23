@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#1a1410">
 <title>Digiopoly</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Digiopoly">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=IM+Fell+English:ital@0;1&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -3760,6 +3767,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // Tap anywhere to wake audio on iOS
   document.body.addEventListener('touchstart', () => audio(), { once: true, passive: true });
   document.body.addEventListener('click', () => audio(), { once: true });
+
+  // Register the service worker so the app loads offline once visited, and
+  // so iOS/Safari treats it as a real installed app (which makes the
+  // localStorage save less likely to be evicted).
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+  // Ask the browser to mark our storage as persistent so the save isn't
+  // cleared under quota pressure or after periods of inactivity. The browser
+  // may grant silently, prompt the user, or decline — all are fine.
+  if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persist().catch(() => {});
+  }
 });
 
 // Expose for inline onclicks
