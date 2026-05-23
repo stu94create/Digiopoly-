@@ -1,0 +1,3610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1a1410">
+<title>Digiopoly</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=IM+Fell+English:ital@0;1&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --felt: #15110b;            /* page bg — deeper warm black */
+  --felt-dark: #0a0805;       /* deepest shadow */
+  --felt-light: #221a12;      /* warm highlight */
+  --cream: #2a201a;           /* card surface — dark warm brown */
+  --cream-dark: #3a2d20;      /* elevated/border surface */
+  --ink: #e8d6a8;             /* warm cream text */
+  --ink-light: #a89572;       /* dim cream muted */
+  --gold: #c9a850;            /* amber accent */
+  --accent: #d14a3f;          /* rubber stamp red */
+  --accent-dark: #8a2820;
+  --shadow: 0 6px 22px rgba(0, 0, 0, 0.7);
+  --rule-line: rgba(232, 214, 168, 0.18);
+  --brown: #6b4423;
+  --light-blue: #7fb8d4;
+  --pink: #b8447e;
+  --orange: #c97a26;
+  --red: #b8302a;
+  --yellow: #c9a929;
+  --greenc: #4d8d5c;
+  --dark-blue: #2a4d7f;
+  --station: #3a3530;
+  --utility: #6b5a40;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; padding: 0;
+  background: var(--felt);
+  color: var(--ink);
+  font-family: 'Special Elite', 'Courier Prime', 'Courier New', monospace;
+  font-size: 17px;
+  line-height: 1.5;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+body {
+  background:
+    /* warm light grain — desk lit from above */
+    repeating-linear-gradient(0deg, transparent 0, transparent 2px, rgba(255, 220, 180, 0.018) 2px, rgba(255, 220, 180, 0.018) 3px),
+    repeating-linear-gradient(90deg, transparent 0, transparent 3px, rgba(255, 220, 180, 0.015) 3px, rgba(255, 220, 180, 0.015) 4px),
+    radial-gradient(ellipse at top, var(--felt-light), var(--felt) 50%, var(--felt-dark)),
+    var(--felt);
+  background-attachment: fixed;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+h1, h2, h3, h4 {
+  font-family: 'Special Elite', 'Courier New', monospace;
+  font-weight: normal;
+  letter-spacing: 0.02em;
+  margin: 0 0 0.5em;
+}
+h1 { font-size: 1.8rem; color: var(--ink); }
+h2 { font-size: 1.3rem; color: var(--ink); }
+h3 { font-size: 1.05rem; color: var(--ink); }
+button {
+  font-family: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.app {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px 14px 24px;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+.screen {
+  display: none;
+}
+.screen.active {
+  display: block;
+}
+.brand {
+  text-align: center;
+  margin-bottom: 20px;
+  padding: 8px 0 14px;
+  border-bottom: 2px solid var(--ink);
+  position: relative;
+}
+.brand::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -7px;
+  height: 1px;
+  background: var(--ink);
+}
+.brand h1 {
+  font-family: 'Special Elite', monospace;
+  font-size: 2rem;
+  color: var(--ink);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  text-shadow: 1px 1px 0 rgba(209,74,63,0.3), 0 0 24px rgba(201,168,80,0.15);
+}
+.brand .tagline {
+  font-family: 'IM Fell English', 'Georgia', serif;
+  font-style: italic;
+  color: var(--ink-light);
+  font-size: 0.9rem;
+  letter-spacing: 0.05em;
+  opacity: 0.85;
+}
+.brand .file-no {
+  display: inline-block;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
+  padding: 2px 8px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  transform: rotate(-1.5deg);
+  opacity: 0.9;
+}
+.card {
+  background: var(--cream);
+  border-radius: 4px;
+  padding: 18px 16px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow), inset 0 0 0 1px rgba(42,29,13,0.06);
+  border: 1px solid rgba(42,29,13,0.18);
+  position: relative;
+}
+.card.tight { padding: 12px 14px; }
+.btn {
+  display: inline-block;
+  background: var(--cream);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  border-radius: 3px;
+  padding: 12px 18px;
+  font-weight: normal;
+  font-size: 1rem;
+  text-align: center;
+  min-height: 48px;
+  min-width: 48px;
+  margin: 4px 0;
+  width: 100%;
+  font-family: 'Special Elite', monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+  transition: transform 0.05s, box-shadow 0.05s;
+}
+.btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+.btn:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.btn-primary {
+  background: var(--accent);
+  color: var(--ink);
+  border-color: var(--ink);
+  box-shadow: 0 3px 10px rgba(209, 74, 63, 0.3);
+}
+.btn-secondary {
+  background: var(--cream-dark);
+  color: var(--ink);
+  border-color: var(--ink);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--ink-light);
+  box-shadow: none;
+}
+.btn-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.btn-row .btn { flex: 1 1 140px; width: auto; }
+.btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.field {
+  margin-bottom: 12px;
+}
+.field label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+.field input[type="text"], .field select {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 1rem;
+  font-family: 'Special Elite', monospace;
+  border: 2px solid var(--ink);
+  border-radius: 3px;
+  background: var(--cream);
+  color: var(--ink);
+}
+.field input:focus-visible, .field select:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  font-size: 0.95rem;
+}
+.checkbox-row input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--accent);
+}
+.trade-fieldset {
+  border: 1px solid var(--cream-dark);
+  border-radius: 3px;
+  padding: 10px 12px;
+  margin: 12px 0;
+  background: rgba(0,0,0,0.15);
+}
+.trade-fieldset legend {
+  padding: 0 6px;
+  font-family: 'Special Elite', monospace;
+  color: var(--ink);
+}
+.trade-input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  flex-wrap: wrap;
+}
+.trade-input-row label { flex: 0 0 auto; font-size: 0.95rem; }
+.trade-input-row input[type="number"] {
+  flex: 1 1 120px;
+  min-width: 100px;
+  padding: 8px 10px;
+  border: 1px solid var(--cream-dark);
+  border-radius: 3px;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: 'Courier Prime', monospace;
+  font-size: 1rem;
+}
+.btn-xs {
+  padding: 6px 10px;
+  font-size: 0.82rem;
+  min-height: 32px;
+  flex: 0 0 auto;
+  width: auto;
+  margin-left: 8px;
+}
+.board-row .btn-xs {
+  margin-left: 6px;
+}
+.player-header {
+  background: var(--cream);
+  color: var(--ink);
+  border-radius: 3px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 2px solid var(--cream-dark);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  position: relative;
+}
+.player-header::before {
+  content: "ACTIVE PLAYER";
+  position: absolute;
+  top: -10px;
+  left: 14px;
+  background: var(--cream);
+  color: var(--accent);
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  padding: 0 8px;
+  border: 1.5px solid var(--accent);
+  text-transform: uppercase;
+}
+.player-header .name {
+  font-family: 'Special Elite', monospace;
+  font-size: 1.1rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.player-header .money {
+  font-family: 'Courier Prime', 'Courier New', monospace;
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 1.15rem;
+}
+.player-header .ai-tag {
+  font-size: 0.65rem;
+  background: var(--accent);
+  color: var(--ink);
+  padding: 2px 6px;
+  border-radius: 2px;
+  margin-left: 6px;
+  vertical-align: middle;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-family: 'Special Elite', monospace;
+}
+.space-card {
+  background: var(--cream);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow);
+  border: 2px solid var(--ink);
+  position: relative;
+}
+.space-card .band {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-family: 'Special Elite', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.3);
+  border-bottom: 1.5px solid var(--ink);
+}
+.space-card .band.no-text { color: transparent; }
+.space-card .body {
+  padding: 18px 18px 16px;
+  position: relative;
+}
+.space-card .name {
+  font-family: 'Special Elite', monospace;
+  font-size: 1.4rem;
+  line-height: 1.15;
+  margin-bottom: 6px;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+.space-card .sub {
+  font-family: 'IM Fell English', 'Georgia', serif;
+  font-style: italic;
+  color: var(--ink-light);
+  font-size: 0.95rem;
+  margin-bottom: 12px;
+}
+.space-card .price {
+  font-family: 'Courier Prime', monospace;
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-bottom: 4px;
+  color: var(--ink);
+}
+.space-card .rent-table {
+  font-size: 0.85rem;
+  font-family: 'Courier Prime', monospace;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1.5px dashed var(--rule-line);
+}
+.space-card .rent-table div {
+  display: flex;
+  justify-content: space-between;
+  padding: 1px 0;
+}
+.space-card .owner {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1.5px dashed var(--rule-line);
+  font-style: italic;
+  font-size: 0.9rem;
+  font-family: 'IM Fell English', 'Georgia', serif;
+  color: var(--ink-light);
+}
+.band-brown { background: var(--brown); }
+.band-light-blue { background: var(--light-blue); color: #1a1206; text-shadow: 1px 1px 0 rgba(255,255,255,0.5); }
+.band-pink { background: var(--pink); }
+.band-orange { background: var(--orange); }
+.band-red { background: var(--red); }
+.band-yellow { background: var(--yellow); color: #1a1206; text-shadow: 1px 1px 0 rgba(255,255,255,0.5); }
+.band-green { background: var(--greenc); }
+.band-dark-blue { background: var(--dark-blue); }
+.band-station { background: var(--station); }
+.band-utility { background: var(--utility); }
+.band-special { background: #1a1206; }
+.band-chance { background: var(--accent); }
+.band-chest { background: var(--gold); color: #1a1206; }
+.band-corner { background: #1a1206; }
+.dice {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin: 14px 0;
+}
+.die {
+  width: 58px;
+  height: 58px;
+  background: var(--cream);
+  border: 2px solid var(--ink);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Special Elite', monospace;
+  font-size: 1.9rem;
+  color: var(--ink);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.6);
+}
+.die.rolling {
+  animation: shake 0.4s ease-in-out;
+}
+@keyframes shake {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  25% { transform: translateY(-6px) rotate(-8deg); }
+  75% { transform: translateY(-3px) rotate(6deg); }
+}
+.status {
+  background: var(--cream);
+  color: var(--ink);
+  border: 1.5px dashed var(--ink);
+  border-radius: 3px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+  min-height: 50px;
+  font-family: 'Courier Prime', monospace;
+  position: relative;
+}
+.status::before {
+  content: "LOG";
+  position: absolute;
+  top: -9px;
+  left: 12px;
+  background: var(--cream);
+  color: var(--accent);
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  padding: 0 6px;
+  font-family: 'Special Elite', monospace;
+}
+.status .log-entry {
+  margin-bottom: 4px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--rule-line);
+}
+.status .log-entry:last-child { border-bottom: 0; margin-bottom: 0; padding-bottom: 0; }
+.status .log-entry.recent { color: var(--accent); font-weight: 700; }
+.menu-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.menu-bar .btn {
+  font-size: 0.85rem;
+  padding: 10px 4px;
+}
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(42,29,13,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 100;
+}
+.modal-backdrop.hidden { display: none; }
+.modal {
+  background: var(--cream);
+  border-radius: 4px;
+  padding: 22px 20px;
+  max-width: 560px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  border: 2px solid var(--ink);
+}
+.modal h2 {
+  margin-top: 0;
+  font-family: 'Special Elite', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--ink);
+}
+.props-list .prop-row {
+  background: var(--cream);
+  border: 1.5px solid var(--cream-dark);
+  border-radius: 3px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+.props-list .prop-row .top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.props-list .prop-row .top .name {
+  font-family: 'Special Elite', monospace;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+.props-list .prop-row .mortgaged {
+  color: var(--accent);
+  font-family: 'Special Elite', monospace;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  border: 1.5px solid var(--accent);
+  padding: 1px 6px;
+  transform: rotate(-2deg);
+  display: inline-block;
+}
+.props-list .prop-row .actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.props-list .prop-row .actions .btn {
+  font-size: 0.85rem;
+  padding: 8px 12px;
+  min-height: 40px;
+  width: auto;
+  flex: 0 1 auto;
+}
+.empty {
+  text-align: center;
+  font-style: italic;
+  color: var(--ink-light);
+  padding: 20px;
+}
+.board-list .board-row {
+  background: var(--cream);
+  border-left: 6px solid var(--ink);
+  border-top: 1px solid var(--rule-line);
+  border-right: 1px solid var(--rule-line);
+  border-bottom: 1px solid var(--rule-line);
+  padding: 8px 12px;
+  margin-bottom: 4px;
+  font-size: 0.95rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Courier Prime', monospace;
+}
+.board-list .board-row.current {
+  background: var(--accent);
+  color: var(--ink);
+  border-left-color: var(--ink);
+  font-weight: 700;
+}
+.board-list .board-row .pos {
+  font-family: 'Courier Prime', monospace;
+  font-size: 0.8rem;
+  color: var(--ink-light);
+  margin-right: 8px;
+}
+.board-list .board-row.current .pos { color: var(--ink); }
+.board-list .board-row .owner-tag {
+  font-size: 0.7rem;
+  background: var(--accent);
+  color: var(--ink);
+  padding: 2px 6px;
+  border-radius: 2px;
+  font-family: 'Special Elite', monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.board-list .br-brown { border-left-color: var(--brown); }
+.board-list .br-light-blue { border-left-color: var(--light-blue); }
+.board-list .br-pink { border-left-color: var(--pink); }
+.board-list .br-orange { border-left-color: var(--orange); }
+.board-list .br-red { border-left-color: var(--red); }
+.board-list .br-yellow { border-left-color: var(--yellow); }
+.board-list .br-green { border-left-color: var(--greenc); }
+.board-list .br-dark-blue { border-left-color: var(--dark-blue); }
+.board-list .br-station { border-left-color: var(--station); }
+.board-list .br-utility { border-left-color: var(--utility); }
+.board-list .br-chance { border-left-color: var(--accent); }
+.board-list .br-chest { border-left-color: var(--gold); }
+.board-list .br-corner { border-left-color: var(--ink); }
+.board-list .br-tax { border-left-color: var(--accent); }
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0);
+  white-space: nowrap; border: 0;
+}
+.player-pip {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: middle;
+  border: 2px solid var(--ink);
+}
+.pip-1 { background: var(--accent); }
+.pip-2 { background: var(--gold); }
+.pip-3 { background: var(--dark-blue); }
+.pip-4 { background: var(--greenc); }
+/* When the pip carries the player's piece emoji, make it big enough to
+   read and clear the coloured background so the emoji is legible. */
+.player-pip.piece-pip {
+  width: auto;
+  height: auto;
+  min-width: 28px;
+  border-radius: 14px;
+  padding: 2px 8px 2px 6px;
+  font-size: 1.1rem;
+  line-height: 1.1;
+  background: var(--cream);
+  text-align: center;
+  margin-right: 6px;
+}
+.piece-select {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 1rem;
+  background: var(--cream);
+  color: var(--ink);
+  border: 1px solid var(--cream-dark);
+  border-radius: 3px;
+  font-family: 'Courier Prime', monospace;
+}
+.players-on-space {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1.5px dashed var(--rule-line);
+  font-size: 0.85rem;
+  font-family: 'IM Fell English', 'Georgia', serif;
+  font-style: italic;
+  color: var(--ink-light);
+}
+.house-row {
+  display: inline-block;
+  margin-left: 4px;
+}
+.house-icon {
+  display: inline-block;
+  width: 10px; height: 10px;
+  background: var(--greenc);
+  margin: 0 1px;
+  border: 1px solid var(--ink);
+}
+.hotel-icon {
+  display: inline-block;
+  width: 16px; height: 10px;
+  background: var(--accent);
+  border: 1px solid var(--ink);
+}
+.alert {
+  background: var(--accent);
+  color: var(--ink);
+  padding: 10px 12px;
+  border-radius: 3px;
+  margin-bottom: 10px;
+  font-size: 0.95rem;
+  font-family: 'Special Elite', monospace;
+  border: 2px solid var(--accent-dark);
+  box-shadow: 0 3px 10px rgba(209, 74, 63, 0.3);
+  letter-spacing: 0.02em;
+}
+.muted { color: var(--ink-light); font-size: 0.85rem; font-family: 'IM Fell English', 'Georgia', serif; font-style: italic; }
+[inert], [inert] * { pointer-events: none; }
+.house-rules-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+}
+.house-rules-list li {
+  padding: 10px 0;
+  border-bottom: 1.5px dashed var(--rule-line);
+}
+.house-rules-list li:last-child { border-bottom: 0; }
+@media (max-width: 380px) {
+  .brand h1 { font-size: 2rem; }
+  .space-card .name { font-size: 1.2rem; }
+  .menu-bar .btn { font-size: 0.75rem; }
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+<!-- SETUP SCREEN -->
+<section class="screen active" id="setup-screen" aria-labelledby="setup-h1">
+  <div class="brand">
+    <div class="file-no">File No. 254/DA</div>
+    <h1 id="setup-h1">Digiopoly</h1>
+    <div class="tagline">An Irish board game of property, allowance and mild indignity</div>
+  </div>
+  <div class="card">
+    <h2>New Game</h2>
+    <div class="field">
+      <label for="num-players">Number of players</label>
+      <select id="num-players">
+        <option value="2">2</option>
+        <option value="3" selected>3</option>
+        <option value="4">4</option>
+      </select>
+    </div>
+    <div id="player-fields"></div>
+    <div class="field">
+      <label for="game-mode-hint" id="game-mode-hint">Tip: tick "AI" beside any player to have the computer play them.</label>
+    </div>
+    <button class="btn btn-primary" id="start-game-btn">Start Game</button>
+    <button class="btn btn-ghost" id="how-to-play-btn" style="margin-top:10px;">How to Play</button>
+  </div>
+  <div class="card">
+    <h3>House Rules</h3>
+    <div class="checkbox-row">
+      <input type="checkbox" id="hr-free-parking">
+      <label for="hr-free-parking">Free Parking jackpot — taxes go in the pot, lander takes the lot</label>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="hr-double-go">
+      <label for="hr-double-go">Land directly on GO — double allowance (€508)</label>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="hr-snake-eyes">
+      <label for="hr-snake-eyes">Snake eyes bonus — collect €100 for rolling double 1s</label>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="hr-sound" checked>
+      <label for="hr-sound">Sound effects on</label>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="hr-auctions" checked>
+      <label for="hr-auctions">Auctions on declined buy — unsold properties go to auction (classic Monopoly rule)</label>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="hr-auto-rescue">
+      <label for="hr-auto-rescue">Auto-rescue — when you can't pay, the game sells buildings and mortgages for you. Off by default so you keep control.</label>
+    </div>
+  </div>
+  <div id="resume-card" class="card" hidden>
+    <h3>Saved Game</h3>
+    <p>You have a game in progress.</p>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="resume-btn">Resume</button>
+      <button class="btn" id="discard-save-btn">Start a New Game</button>
+    </div>
+  </div>
+</section>
+
+<!-- GAME SCREEN -->
+<section class="screen" id="game-screen" aria-labelledby="game-h1">
+  <h1 id="game-h1" class="sr-only">Digiopoly — game in progress</h1>
+  <div class="menu-bar" role="navigation" aria-label="Game menu">
+    <button class="btn btn-ghost" id="menu-portfolio">Portfolio</button>
+    <button class="btn btn-ghost" id="menu-board">Board</button>
+    <button class="btn btn-ghost" id="menu-players">Players</button>
+    <button class="btn btn-ghost" id="menu-settings">Menu</button>
+  </div>
+  <div class="player-header" id="player-header" aria-live="off">
+    <div><span class="player-pip" id="player-pip"></span><span class="name" id="player-name">—</span><span class="ai-tag" id="player-ai-tag" hidden>AI</span></div>
+    <div class="money" id="player-money">€0</div>
+  </div>
+  <div id="current-space-area" aria-live="off"></div>
+  <div class="dice" aria-hidden="true">
+    <div class="die" id="die1">·</div>
+    <div class="die" id="die2">·</div>
+  </div>
+  <div id="actions-area"></div>
+  <div class="status" id="status-log" aria-hidden="false"></div>
+  <div id="aria-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+</section>
+
+<!-- MODAL -->
+<div class="modal-backdrop hidden" id="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal" id="modal">
+    <h2 id="modal-title">—</h2>
+    <div id="modal-body"></div>
+    <div id="modal-actions" class="btn-row" style="margin-top:14px;"></div>
+  </div>
+</div>
+
+</div>
+<script>
+"use strict";
+
+// ============================================================
+// CONSTANTS — Board, cards, prices
+// ============================================================
+
+const STARTING_CASH = 1500;
+const GO_SALARY = 254;
+const BLIND_TAX = 100;
+const PREMIUM_BLIND_TAX = 200;
+const PITY_CORNER_FINE = 50;
+const STATION_RENTS = [25, 50, 100, 200]; // 1, 2, 3, 4 owned
+const UTILITY_MULTIPLIERS = [4, 10]; // 1 owned, 2 owned
+
+// Property data. rent = [base, 1 house, 2, 3, 4, hotel]
+// houseCost is per-house. mortgage is half of price.
+const BOARD = [
+  { pos: 0, type: 'corner', name: 'GO', sub: 'Collect €254 Disability Allowance' },
+  { pos: 1, type: 'property', name: 'The Out of Sight Podcast', group: 'brown', price: 60,
+    rent: [2, 10, 30, 90, 160, 250], houseCost: 50, mortgage: 30 },
+  { pos: 2, type: 'chest', name: 'Community Chest', sub: 'Draw a card' },
+  { pos: 3, type: 'property', name: 'The Tech Doc Podcast', group: 'brown', price: 60,
+    rent: [4, 20, 60, 180, 320, 450], houseCost: 50, mortgage: 30 },
+  { pos: 4, type: 'tax', name: 'The Blind Tax', sub: 'Pay €100 — your accessible tech subs came in', amount: BLIND_TAX },
+  { pos: 5, type: 'station', name: 'Iarnród Éireann', price: 200, mortgage: 100 },
+  { pos: 6, type: 'property', name: 'Headway', group: 'light-blue', price: 100,
+    rent: [6, 30, 90, 270, 400, 550], houseCost: 50, mortgage: 50 },
+  { pos: 7, type: 'chance', name: 'Chance', sub: 'Draw a card' },
+  { pos: 8, type: 'property', name: 'As I Am', group: 'light-blue', price: 100,
+    rent: [6, 30, 90, 270, 400, 550], houseCost: 50, mortgage: 50 },
+  { pos: 9, type: 'property', name: 'INBAF', group: 'light-blue', price: 120,
+    rent: [8, 40, 100, 300, 450, 600], houseCost: 50, mortgage: 60 },
+  { pos: 10, type: 'corner', name: 'The Pity Corner', sub: 'Just Visiting' },
+  { pos: 11, type: 'property', name: 'Cheshire Ireland', group: 'pink', price: 140,
+    rent: [10, 50, 150, 450, 625, 750], houseCost: 100, mortgage: 70 },
+  { pos: 12, type: 'utility', name: 'ESB', price: 150, mortgage: 75 },
+  { pos: 13, type: 'property', name: 'Inclusion Ireland', group: 'pink', price: 140,
+    rent: [10, 50, 150, 450, 625, 750], houseCost: 100, mortgage: 70 },
+  { pos: 14, type: 'property', name: 'ChildVision', group: 'pink', price: 160,
+    rent: [12, 60, 180, 500, 700, 900], houseCost: 100, mortgage: 80 },
+  { pos: 15, type: 'station', name: 'Bus Éireann', price: 200, mortgage: 100 },
+  { pos: 16, type: 'property', name: 'Enable Ireland', group: 'orange', price: 180,
+    rent: [14, 70, 200, 550, 750, 950], houseCost: 100, mortgage: 90 },
+  { pos: 17, type: 'chest', name: 'Community Chest', sub: 'Draw a card' },
+  { pos: 18, type: 'property', name: 'AHEAD', group: 'orange', price: 180,
+    rent: [14, 70, 200, 550, 750, 950], houseCost: 100, mortgage: 90 },
+  { pos: 19, type: 'property', name: 'Anne Sullivan Centre', group: 'orange', price: 200,
+    rent: [16, 80, 220, 600, 800, 1000], houseCost: 100, mortgage: 100 },
+  { pos: 20, type: 'corner', name: 'The Busy Spot', sub: 'Free Parking — where the guide dogs do their business' },
+  { pos: 21, type: 'property', name: 'St John of Gods', group: 'red', price: 220,
+    rent: [18, 90, 250, 700, 875, 1050], houseCost: 150, mortgage: 110 },
+  { pos: 22, type: 'chance', name: 'Chance', sub: 'Draw a card' },
+  { pos: 23, type: 'property', name: 'Daughters of Charity', group: 'red', price: 220,
+    rent: [18, 90, 250, 700, 875, 1050], houseCost: 150, mortgage: 110 },
+  { pos: 24, type: 'property', name: 'Rehab Group', group: 'red', price: 240,
+    rent: [20, 100, 300, 750, 925, 1100], houseCost: 150, mortgage: 120 },
+  { pos: 25, type: 'station', name: 'Dublin Bus', price: 200, mortgage: 100 },
+  { pos: 26, type: 'property', name: 'Irish Wheelchair Association', group: 'yellow', price: 260,
+    rent: [22, 110, 330, 800, 975, 1150], houseCost: 150, mortgage: 130 },
+  { pos: 27, type: 'property', name: 'Chime / DeafHear', group: 'yellow', price: 260,
+    rent: [22, 110, 330, 800, 975, 1150], houseCost: 150, mortgage: 130 },
+  { pos: 28, type: 'utility', name: 'Irish Water', price: 150, mortgage: 75 },
+  { pos: 29, type: 'property', name: 'Sight & Sound Technology', group: 'yellow', price: 280,
+    rent: [24, 120, 360, 850, 1025, 1200], houseCost: 150, mortgage: 140 },
+  { pos: 30, type: 'gotojail', name: 'Go to The Pity Corner', sub: 'Off you go' },
+  { pos: 31, type: 'property', name: 'Irish Guide Dogs', group: 'green', price: 300,
+    rent: [26, 130, 390, 900, 1100, 1275], houseCost: 200, mortgage: 150 },
+  { pos: 32, type: 'property', name: 'Fighting Blindness', group: 'green', price: 300,
+    rent: [26, 130, 390, 900, 1100, 1275], houseCost: 200, mortgage: 150 },
+  { pos: 33, type: 'chest', name: 'Community Chest', sub: 'Draw a card' },
+  { pos: 34, type: 'property', name: 'Vision Ireland', group: 'green', price: 320,
+    rent: [28, 150, 450, 1000, 1200, 1400], houseCost: 200, mortgage: 160 },
+  { pos: 35, type: 'station', name: 'Luas', price: 200, mortgage: 100 },
+  { pos: 36, type: 'chance', name: 'Chance', sub: 'Draw a card' },
+  { pos: 37, type: 'property', name: 'Leinster House', group: 'dark-blue', price: 350,
+    rent: [35, 175, 500, 1100, 1300, 1500], houseCost: 200, mortgage: 175 },
+  { pos: 38, type: 'tax', name: 'The Premium Blind Tax', sub: 'Pay €200 — sprung for the fancy braille display', amount: PREMIUM_BLIND_TAX },
+  { pos: 39, type: 'property', name: 'Department of Social Protection', group: 'dark-blue', price: 400,
+    rent: [50, 200, 600, 1400, 1700, 2000], houseCost: 200, mortgage: 200 },
+];
+
+// Educational blurbs shown when a player opens "About" on a buy modal.
+// Edit any of these freely — they're descriptions of who the real-world
+// organisation (or place) is and what they do.
+const INFO = {
+  'The Out of Sight Podcast': 'A made-up podcast standing in for community media by and for blind creators. In real life there\'s a growing scene of podcasts produced by blind people covering accessibility, lived experience, and assistive tech.',
+  'The Tech Doc Podcast': 'A real podcast covering assistive technology, co-hosted by Stuart alongside colleagues at DigiCoach. Episodes review screen readers, mainstream tech with accessibility angles, and feature interviews from the AT community.',
+  'Headway': 'Headway Ireland, founded in 1985 as a support group. Provides community-based rehabilitation services for adults living with acquired brain injury (ABI) and their families, with centres in Dublin, Cork, Limerick, Carlow, and Tralee. ABI can change cognition, mobility, communication, and identity, often suddenly after a stroke or accident.',
+  'As I Am': 'AsIAm — Ireland\'s national autism charity, founded in 2014 by Adam Harris (who is himself autistic). Autistic-led, based in Blackrock, Dublin. Provides advocacy, peer support, training, and works to make Ireland a more autism-friendly society.',
+  'INBAF': 'The Irish National Braille and Alternative Formats Authority, launched in 2012 by NCBI Library, ChildVision\'s National Braille Production, and the Arbour Hill Prison Braille Unit. Sets standards for braille and accessible formats in Ireland, supports braille users, and oversaw Ireland\'s adoption of Unified English Braille.',
+  'Cheshire Ireland': 'Provides supported living, respite, and care services for adults with physical, sensory, neurological, and acquired brain injury conditions, often with complex or high support needs. Part of the international Leonard Cheshire network, with services across the country.',
+  'Inclusion Ireland': 'The national association advocating for the rights of people with an intellectual disability in Ireland. Campaigns for inclusion, supports families and self-advocates, and works on policy from a rights-based perspective.',
+  'ChildVision': 'The National Education Centre for Blind Children, on Grace Park Road in Drumcondra, Dublin. Rebranded from St Joseph\'s in 2012 (the site has supported blind children since 1859). Serves children with visual impairment from birth to 23, including those with additional disabilities (MDVI). Hosts the National Braille Production service and a campus equine therapy centre.',
+  'Enable Ireland': 'Founded in 1948 as Cerebral Palsy Ireland by Dr Robert Collis. Provides free health and support services to children and adults with physical, sensory, and intellectual disabilities, and their families, from over 40 locations across Ireland. Largely HSE-funded.',
+  'AHEAD': 'The Association for Higher Education Access and Disability, founded in 1988 by university students with disabilities. Works with universities, colleges, and employers to make further and higher education and the workplace more accessible to people with disabilities. Runs the GET AHEAD Graduate Forum and the WAM Mentored Work Placement Programme.',
+  'Anne Sullivan Centre': 'Provides residential, day, and outreach services for people who are deafblind in Ireland. Based in Stillorgan, Dublin. Named after the Irish-American teacher Anne Sullivan, who worked with Helen Keller. Campaigns for deafblindness to be recognised as a distinct disability.',
+  'St John of Gods': 'A long-established Irish provider of mental health, intellectual disability, and adolescent services, with roots in the Hospitaller Order of St John of God. Operates everything from community-based supports to specialist hospital services.',
+  'Daughters of Charity': 'The Daughters of Charity Disability Support Services provided residential and day services to people with intellectual disabilities in Dublin, Limerick, and North Tipperary/Offaly from the early 20th century. In December 2021 the organisation rebranded as Avista, while keeping its founding mission.',
+  'Rehab Group': 'One of the largest charities in Ireland providing services to people with disabilities. Runs training, employment, residential, and day services through brands including RehabCare and the National Learning Network.',
+  'Irish Wheelchair Assoc': 'The Irish Wheelchair Association (IWA) — the main representative organisation for people with limited mobility in Ireland. Runs assisted living, day services, accessible transport, sport, advocacy, and a network of accessible community resource centres.',
+  'Chime/DeafHear': 'Chime is the national charity for deaf, deafened, and hard-of-hearing people in Ireland, with over fifty years of history. Founded as the National Association for the Deaf, rebranded to DeafHear in 2007, and to Chime on 1 November 2018. Provides services, technology, and advocacy.',
+  'Sight & Sound Technology': 'A leading assistive technology distributor in the UK and Ireland, founded in 1979 and headquartered in Northampton, with a Dublin office. Distributes screen readers (including JAWS), magnification software (ZoomText), Focus Blue braille displays, and many other AT products, and provides training and support.',
+  'Irish Guide Dogs': 'Irish Guide Dogs for the Blind, based at Model Farm Road in Cork. Founded in 1976; the first Guide Dog partnership was in 1980. Trains and provides guide dogs to people with vision impairment, and since 2005 has also been the first organisation in Europe to provide assistance dogs for children with autism. Services are free to clients; the charity is largely funded by donations.',
+  'Fighting Blindness': 'A patient-led charity founded in 1983, dedicated to funding research into treatments and cures for sight loss caused by retinal degenerative conditions. Has invested over €20 million in 115+ research projects, and provides counselling and support services. DigiCoach, the peer coaching initiative, is connected to Fighting Blindness.',
+  'Vision Ireland': 'The national sight loss agency, originally founded in 1931 as the National Council for the Blind of Ireland (NCBI). Rebranded as Vision Ireland on 6 November 2023 to better reflect support for the full range of vision impairments. Provides rehabilitation training, technology assessments, an accessible library, employment supports, and advocacy.',
+  'Leinster House': 'The seat of the Oireachtas — Ireland\'s parliament — on Kildare Street in Dublin. Houses both the Dáil (lower house) and Seanad (upper house). Where disability legislation and the national budget — including the Disability Allowance rate — are decided.',
+  'Department of Social Protection': 'The government department running Ireland\'s social welfare system. Administers the Disability Allowance (the €254 weekly payment passing GO represents), Carer\'s Allowance, Invalidity Pension, Blind Pension, Free Travel Scheme, and many other supports.',
+  'Iarnród Éireann': 'Iarnród Éireann / Irish Rail — Ireland\'s national rail operator (the Irish name means "Iron Road of Ireland"). Runs intercity, commuter, and DART services. Accepts the Free Travel Pass and offers a passenger assistance service to disabled travellers.',
+  'Bus Éireann': 'Ireland\'s national bus operator outside Dublin. Runs intercity Expressway coaches and regional routes. Accepts the Free Travel Pass.',
+  'Dublin Bus': 'Dublin city\'s main bus operator. Accepts the Free Travel Pass. On-board audio next-stop announcements are an essential accessibility feature for blind passengers.',
+  'Luas': 'Dublin\'s tram network — Red and Green lines crossing the city. The name is Irish for "speed". Audio stop announcements and tactile paving at platforms make it relatively accessible.',
+  'ESB': 'The Electricity Supply Board — Ireland\'s state-owned electricity utility, founded in 1927. Powers your accessible tech, your charging cables, and your endless device subscriptions.',
+  'Irish Water': 'Uisce Éireann — Ireland\'s national water utility. Responsible for public water supply and sewerage services nationwide.',
+};
+
+// Group membership for monopoly detection
+const GROUPS = {
+  brown: [1, 3],
+  'light-blue': [6, 8, 9],
+  pink: [11, 13, 14],
+  orange: [16, 18, 19],
+  red: [21, 23, 24],
+  yellow: [26, 27, 29],
+  green: [31, 32, 34],
+  'dark-blue': [37, 39],
+};
+const STATIONS = [5, 15, 25, 35];
+const UTILITIES = [12, 28];
+
+// Placeholder card decks. Stuart will rewrite the text; mechanics stay.
+// effect types: GOTO, GOTO_NEAREST_STATION, GOTO_NEAREST_UTILITY, COLLECT, PAY,
+//   GET_OUT, GO_TO_JAIL, BACK_3, PAY_EACH, COLLECT_EACH, REPAIRS
+const CHANCE_DECK = [
+  { text: 'Your boss says you have to host a webinar with the partner organisation. Uber to St John of Gods — pay €50.', effect: { type: 'SEQUENCE', steps: [{ type: 'PAY', amount: 50 }, { type: 'GOTO', pos: 21 }] } },
+  { text: 'Uber fare to visit Fighting Blindness. Pay €50 and travel there.', effect: { type: 'SEQUENCE', steps: [{ type: 'PAY', amount: 50 }, { type: 'GOTO', pos: 32 }] } },
+  { text: 'You had to buy a new braille display. Pay €800.', effect: { type: 'PAY', amount: 800 } },
+  { text: 'You\'re invited on a podcast. Uber to The Out of Sight Podcast — pay €50.', effect: { type: 'SEQUENCE', steps: [{ type: 'PAY', amount: 50 }, { type: 'GOTO', pos: 1 }] } },
+  { text: 'You won the Radio Cash Machine. Collect €2000.', effect: { type: 'COLLECT', amount: 2000 } },
+  { text: 'Your guide dog needs to go. Travel to The Busy Spot.', effect: { type: 'GOTO', pos: 20 } },
+  { text: 'Hospital appointment tomorrow at 10am at the other end of the country. Travel to the nearest station — no time to stop, do not collect €254.', effect: { type: 'GOTO_NEAREST_STATION', skipSalary: true } },
+  { text: 'Your guide left you on a seat and wandered off. Go directly to The Pity Corner.', effect: { type: 'GO_TO_JAIL' } },
+  { text: 'You\'ve made a wrong turn. Go back three spaces.', effect: { type: 'BACK_3' } },
+  { text: 'You successfully sued Penneys for refusing your guide dog entry. Collect €400.', effect: { type: 'COLLECT', amount: 400 } },
+  { text: 'You\'re accepted onto Irish Guide Dogs\' Independent Living course. Uber to Irish Guide Dogs — pay €50.', effect: { type: 'SEQUENCE', steps: [{ type: 'PAY', amount: 50 }, { type: 'GOTO', pos: 31 }] } },
+  { text: 'Pipe burst — sort it out. Uber to the nearest utility — pay €50.', effect: { type: 'SEQUENCE', steps: [{ type: 'PAY', amount: 50 }, { type: 'GOTO_NEAREST_UTILITY' }] } },
+  { text: 'You accidentally broke a statue in a fancy hotel. Pay €600 to get it repaired.', effect: { type: 'PAY', amount: 600 } },
+  { text: 'Storm Sarah just hit Ireland. Pay €100 per house and €300 per hotel for repairs.', effect: { type: 'REPAIRS', perHouse: 100, perHotel: 300 } },
+  { text: 'One of your properties went bust. The bank repossesses your most valuable one for €100.', effect: { type: 'REPOSSESS', amount: 100 } },
+  { text: 'Vision Ireland are demonstrating a new accessible toilet. You decide to go. Uber there — pay €50.', effect: { type: 'SEQUENCE', steps: [{ type: 'PAY', amount: 50 }, { type: 'GOTO', pos: 34 }] } },
+];
+
+const CHEST_DECK = [
+  { text: 'The Government are giving a double payment this week. Collect €508 next time you pass GO.', effect: { type: 'NEXT_GO_BONUS', multiplier: 2 } },
+  { text: 'Someone stepped on your cane and broke it.', effect: { type: 'CHOICE', options: [
+    { label: 'Pay €100 for a replacement', effect: { type: 'PAY', amount: 100 } },
+    { label: 'Go to Vision Ireland for a free one', effect: { type: 'GOTO', pos: 34 } }
+  ] } },
+  { text: 'Your guide dog\'s food bill is due. Pay €80.', effect: { type: 'PAY', amount: 80 } },
+  { text: 'Someone spotted you sitting alone and came over for a chat. Get Out of The Pity Corner Free.', effect: { type: 'GET_OUT' } },
+  { text: 'Your VAT reclaim on an accessibility product came through. Collect €200.', effect: { type: 'COLLECT', amount: 200 } },
+  { text: 'You lent the next player money to buy chocolate. Collect €20 from them.', effect: { type: 'COLLECT_NEXT', amount: 20 } },
+  { text: 'Your guide dog needs the vet. Pay €100.', effect: { type: 'PAY', amount: 100 } },
+  { text: 'Your shed blew down in the storm. At least you rescued your napkin collection. Pay €200 for a new one.', effect: { type: 'PAY', amount: 200 } },
+  { text: 'It\'s your blindaversary. Collect nothing — it\'s not actually your birthday.', effect: { type: 'NO_OP' } },
+  { text: 'It\'s actually your birthday. Collect €10 from each player.', effect: { type: 'COLLECT_EACH', amount: 10 } },
+  { text: 'You owe a few people money. Pay €10 to each player.', effect: { type: 'PAY_EACH', amount: 10 } },
+  { text: 'Your telly broke. You called Sky Accessibility through the Be My Eyes app for help. Pay €250 for a new one.', effect: { type: 'PAY', amount: 250 } },
+  { text: 'Time to pay dog insurance. Pay €150.', effect: { type: 'PAY', amount: 150 } },
+  { text: 'You win on a scratch card. Collect €200.', effect: { type: 'COLLECT', amount: 200 } },
+  { text: 'Your electricity bills are due. Pay €300.', effect: { type: 'PAY', amount: 300 } },
+  { text: 'You buy your guide dog a new toy. Pay €10.', effect: { type: 'PAY', amount: 10 } },
+];
+
+// ============================================================
+// PLAYER PIECES
+// ============================================================
+// Choose your weapon. Themed around blind/AT life, Irish culture, and
+// a handful of personal favourites.
+const PIECES = [
+  { key: 'guide-dog',  emoji: '🦮', label: 'Guide dog' },
+  { key: 'white-cane', emoji: '🦯', label: 'White cane' },
+  { key: 'hable',      emoji: '⠿', label: 'Hable One' },
+  { key: 'iphone',     emoji: '📱', label: 'iPhone' },
+  { key: 'android',    emoji: '🤖', label: 'Android' },
+  { key: 'mic',        emoji: '🎙️', label: 'Microphone' },
+  { key: 'headphones', emoji: '🎧', label: 'Headphones' },
+  { key: 'watch',      emoji: '⌚', label: 'Apple Watch' },
+  { key: 'tea',        emoji: '☕', label: 'Cup of tea' },
+  { key: 'shamrock',   emoji: '☘️', label: 'Shamrock' },
+  { key: 'cork',       emoji: '🚩', label: 'Rebel Cork flag' },
+  { key: 'lambchop',   emoji: '🐑', label: 'Lambchop' },
+  { key: 'panda',      emoji: '🐼', label: 'Kung Fu Panda' },
+  { key: 'bunny',      emoji: '🐰', label: 'The bunny' },
+  { key: 'queen',      emoji: '👑', label: 'Disney queen' },
+];
+function pieceFor(player) {
+  return PIECES.find(p => p.key === player.piece) || PIECES[((player.id || 1) - 1) % PIECES.length];
+}
+
+// ============================================================
+// STATE
+// ============================================================
+
+let state = null;
+
+function defaultState() {
+  return {
+    players: [],
+    currentIdx: 0,
+    dice: [0, 0],
+    doubleCount: 0,
+    turnPhase: 'roll',
+    chanceDeck: shuffle([...CHANCE_DECK]),
+    chestDeck: shuffle([...CHEST_DECK]),
+    chanceIdx: 0,
+    chestIdx: 0,
+    freeParkingPot: 0,
+    houseRules: { freeParkingJackpot: false, doubleOnGo: false, snakeEyesBonus: false, sound: true, autoRescue: false, auctions: true },
+    log: [],
+    gameOver: false,
+    winner: null,
+  };
+}
+
+function newPlayer(id, name, isAI, piece) {
+  return {
+    id, name, isAI,
+    piece: piece || PIECES[(id - 1) % PIECES.length].key,
+    position: 0,
+    money: STARTING_CASH,
+    properties: [], // pos numbers
+    mortgaged: [],  // pos numbers
+    houses: {},     // { [pos]: number 0-4 }
+    hotels: {},     // { [pos]: 1 }
+    jailTurns: 0,   // 0 = not in jail, 1-3 = turns served
+    inJail: false,
+    getOutCards: 0,
+    bankrupt: false,
+    nextGoMultiplier: 1, // 1 = normal salary, 2 = double on next GO pass, etc.
+  };
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function fmtMoney(n) {
+  return '€' + n.toLocaleString('en-IE');
+}
+
+function rollDie() { return Math.floor(Math.random() * 6) + 1; }
+
+function findOwner(pos) {
+  for (const p of state.players) {
+    if (p.properties.includes(pos)) return p;
+  }
+  return null;
+}
+
+function isPropertySpace(pos) {
+  const s = BOARD[pos];
+  return s && (s.type === 'property' || s.type === 'station' || s.type === 'utility');
+}
+
+function playerOwnsFullGroup(player, group) {
+  const positions = GROUPS[group];
+  if (!positions) return false;
+  return positions.every(p => player.properties.includes(p));
+}
+
+function playerStationsOwned(player) {
+  return STATIONS.filter(p => player.properties.includes(p)).length;
+}
+
+function playerUtilitiesOwned(player) {
+  return UTILITIES.filter(p => player.properties.includes(p)).length;
+}
+
+function currentPlayer() { return state.players[state.currentIdx]; }
+
+function alivePlayers() { return state.players.filter(p => !p.bankrupt); }
+
+// Pacing: AI step delays must be long enough for VoiceOver to read the previous announcement
+// before the next one clobbers the live region. Adjust AI_PACE if it still feels rushed.
+const AI_PACE = 1800;
+const HUMAN_PACE = 450;
+function pace() {
+  if (!state || !state.players[state.currentIdx]) return HUMAN_PACE;
+  return state.players[state.currentIdx].isAI ? AI_PACE : HUMAN_PACE;
+}
+
+// Wait for the announcement queue to be fully read, then take a short
+// breath, then run the next AI action. This stops the AI from charging
+// ahead while VoiceOver is still mid-sentence.
+function aiNext(fn) {
+  whenAnnouncementsIdle(() => setTimeout(fn, 350));
+}
+
+// ============================================================
+// AUDIO
+// ============================================================
+
+let audioCtx = null;
+
+function audio() {
+  if (!state || !state.houseRules.sound) return null;
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch (e) { return null; }
+  }
+  return audioCtx;
+}
+
+function tone(freq, dur, type, gain) {
+  const ctx = audio();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  const o = ctx.createOscillator();
+  const g = ctx.createGain();
+  o.type = type || 'sine';
+  o.frequency.value = freq;
+  g.gain.setValueAtTime(0, now);
+  g.gain.linearRampToValueAtTime(gain || 0.18, now + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+  o.connect(g).connect(ctx.destination);
+  o.start(now);
+  o.stop(now + dur);
+}
+
+function sfxRoll() {
+  tone(160, 0.08, 'square', 0.15);
+  setTimeout(() => tone(220, 0.08, 'square', 0.15), 90);
+}
+function sfxMoneyIn() {
+  tone(523, 0.1, 'triangle', 0.18);
+  setTimeout(() => tone(659, 0.1, 'triangle', 0.18), 90);
+  setTimeout(() => tone(784, 0.14, 'triangle', 0.18), 180);
+}
+function sfxMoneyOut() {
+  tone(440, 0.1, 'triangle', 0.18);
+  setTimeout(() => tone(330, 0.16, 'triangle', 0.18), 90);
+}
+function sfxBuy() {
+  tone(523, 0.1, 'sine', 0.18);
+  setTimeout(() => tone(659, 0.1, 'sine', 0.18), 80);
+  setTimeout(() => tone(880, 0.18, 'sine', 0.18), 160);
+}
+function sfxJail() {
+  tone(220, 0.18, 'sawtooth', 0.15);
+  setTimeout(() => tone(165, 0.22, 'sawtooth', 0.15), 160);
+}
+function sfxPassGo() {
+  tone(523, 0.1, 'square', 0.15);
+  setTimeout(() => tone(659, 0.1, 'square', 0.15), 80);
+  setTimeout(() => tone(784, 0.1, 'square', 0.15), 160);
+  setTimeout(() => tone(1047, 0.2, 'square', 0.15), 240);
+}
+function sfxCard() { tone(700, 0.08, 'triangle', 0.14); }
+
+// ============================================================
+// PERSISTENCE
+// ============================================================
+
+const SAVE_KEY = 'pity-corner-save';
+
+function saveGame() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {}
+}
+
+function loadGame() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (e) { return null; }
+}
+
+function clearSave() {
+  try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+}
+
+function hasSave() { return !!localStorage.getItem(SAVE_KEY); }
+
+// ============================================================
+// LOG / ANNOUNCE
+// ============================================================
+
+// Announcement queue — paces messages to the aria-live region so VoiceOver
+// can finish reading each one before the next arrives. Gap scales with
+// message length so long card texts get proper airtime.
+let _announceQueue = [];
+let _announceActive = false;
+let _announceIdleCallbacks = [];
+let _lastAnnounceMsg = '';
+let _lastAnnounceTime = 0;
+
+function _msgDuration(msg) {
+  // ~55ms per character, 1.2s floor, 8s ceiling.
+  // VoiceOver speaks roughly 12-15 chars/sec at default rate.
+  return Math.min(8000, Math.max(1200, (msg || '').length * 55));
+}
+
+function announce(msg) {
+  if (!state) return;
+  state.log.unshift(msg);
+  state.log = state.log.slice(0, 20);
+  renderStatus();              // visible log updates immediately
+  _announceQueue.push(msg);    // screen reader gets timed delivery
+  if (!_announceActive) _drainAnnouncements();
+}
+
+function _drainAnnouncements() {
+  // If anything was spoken recently, wait until that message's airtime is up
+  // before doing anything else — including announcing the next one or
+  // signalling idle. This prevents late arrivals from cutting off the
+  // current read.
+  const since = Date.now() - _lastAnnounceTime;
+  const need = _msgDuration(_lastAnnounceMsg);
+  if (since < need) {
+    _announceActive = true;
+    setTimeout(_drainAnnouncements, need - since);
+    return;
+  }
+  if (_announceQueue.length === 0) {
+    _announceActive = false;
+    const cbs = _announceIdleCallbacks;
+    _announceIdleCallbacks = [];
+    cbs.forEach(cb => { try { cb(); } catch(e){} });
+    return;
+  }
+  _announceActive = true;
+  const a = document.getElementById('aria-announcer');
+  const next = _announceQueue.shift();
+  if (a) {
+    a.textContent = '';
+    setTimeout(() => { a.textContent = next; }, 40);
+  }
+  _lastAnnounceMsg = next;
+  _lastAnnounceTime = Date.now();
+  setTimeout(_drainAnnouncements, _msgDuration(next));
+}
+
+// Run cb once the announcement queue is fully drained AND the last
+// message has had its full airtime. Stops AI from barrelling ahead while
+// VoiceOver is still mid-sentence.
+function whenAnnouncementsIdle(cb) {
+  const since = Date.now() - _lastAnnounceTime;
+  const need = _msgDuration(_lastAnnounceMsg);
+  if (!_announceActive && _announceQueue.length === 0 && since >= need) {
+    cb();
+  } else {
+    _announceIdleCallbacks.push(cb);
+  }
+}
+
+function renderStatus() {
+  const el = document.getElementById('status-log');
+  if (!state) return;
+  el.innerHTML = state.log.slice(0, 5).map((m, i) =>
+    `<div class="log-entry${i === 0 ? ' recent' : ''}">${escapeHtml(m)}</div>`
+  ).join('');
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// ============================================================
+// SETUP FLOW
+// ============================================================
+
+function renderSetup() {
+  const num = parseInt(document.getElementById('num-players').value, 10);
+  const wrap = document.getElementById('player-fields');
+  wrap.innerHTML = '';
+  for (let i = 0; i < num; i++) {
+    const placeholder = 'Player ' + (i + 1);
+    const defaultPiece = PIECES[i % PIECES.length].key;
+    const pieceOptions = PIECES.map(pc =>
+      `<option value="${pc.key}"${pc.key === defaultPiece ? ' selected' : ''}>${pc.emoji} ${pc.label}</option>`
+    ).join('');
+    wrap.insertAdjacentHTML('beforeend', `
+      <div class="field">
+        <label for="pname-${i}">Player ${i + 1} name</label>
+        <input type="text" id="pname-${i}" placeholder="${placeholder}" autocomplete="off">
+        <label for="ppiece-${i}" style="display:block;margin-top:10px;">Piece</label>
+        <select id="ppiece-${i}" class="piece-select">${pieceOptions}</select>
+        <div class="checkbox-row" style="margin-top:8px;">
+          <input type="checkbox" id="pai-${i}" ${i === 0 ? '' : 'checked'}>
+          <label for="pai-${i}">AI controlled</label>
+        </div>
+      </div>
+    `);
+  }
+}
+
+function startGame() {
+  const num = parseInt(document.getElementById('num-players').value, 10);
+  state = defaultState();
+  state.houseRules.freeParkingJackpot = document.getElementById('hr-free-parking').checked;
+  state.houseRules.doubleOnGo = document.getElementById('hr-double-go').checked;
+  state.houseRules.snakeEyesBonus = document.getElementById('hr-snake-eyes').checked;
+  state.houseRules.sound = document.getElementById('hr-sound').checked;
+  state.houseRules.autoRescue = document.getElementById('hr-auto-rescue').checked;
+  state.houseRules.auctions = document.getElementById('hr-auctions').checked;
+  for (let i = 0; i < num; i++) {
+    const name = (document.getElementById('pname-' + i).value || ('Player ' + (i + 1))).trim();
+    const isAI = document.getElementById('pai-' + i).checked;
+    const piece = document.getElementById('ppiece-' + i).value;
+    state.players.push(newPlayer(i + 1, name, isAI, piece));
+  }
+  announce('Game on. ' + state.players[0].name + ' goes first.');
+  saveGame();
+  showScreen('game-screen');
+  renderGame();
+  if (currentPlayer().isAI) aiNext(aiTakeTurn);
+}
+
+function resumeGame() {
+  const s = loadGame();
+  if (!s) return;
+  state = s;
+  showScreen('game-screen');
+  renderGame();
+  if (currentPlayer().isAI && state.turnPhase !== 'gameover') aiNext(aiTakeTurn);
+}
+
+// ============================================================
+// SCREENS
+// ============================================================
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ============================================================
+// RENDER GAME
+// ============================================================
+
+function renderGame() {
+  if (!state) return;
+  const p = currentPlayer();
+  document.getElementById('player-name').textContent = p.name + (p.inJail ? ' — In The Pity Corner' : '');
+  document.getElementById('player-money').textContent = fmtMoney(p.money);
+  document.getElementById('player-ai-tag').hidden = !p.isAI;
+  const pip = document.getElementById('player-pip');
+  pip.className = 'player-pip piece-pip pip-' + p.id;
+  pip.textContent = pieceFor(p).emoji;
+  pip.setAttribute('aria-label', pieceFor(p).label);
+
+  renderCurrentSpace();
+  renderDice();
+  renderActions();
+  renderStatus();
+}
+
+function renderCurrentSpace() {
+  const p = currentPlayer();
+  const space = BOARD[p.position];
+  const area = document.getElementById('current-space-area');
+
+  const bandClass = getBandClass(space);
+  let body = '';
+
+  if (space.type === 'property' || space.type === 'station' || space.type === 'utility') {
+    const owner = findOwner(p.position);
+    const isYours = owner && owner.id === p.id;
+    const mortgaged = owner && owner.mortgaged.includes(p.position);
+    const houses = owner ? (owner.houses[p.position] || 0) : 0;
+    const hasHotel = owner ? !!owner.hotels[p.position] : false;
+    body = `
+      <div class="band ${bandClass}">${groupLabel(space)}</div>
+      <div class="body">
+        <div class="name">${escapeHtml(space.name)}</div>
+        ${space.type === 'station' ? '<div class="sub">Station</div>' : space.type === 'utility' ? '<div class="sub">Utility</div>' : ''}
+        ${space.price ? `<div class="price">Price: ${fmtMoney(space.price)}</div>` : ''}
+        ${space.type === 'property' && space.rent ? rentTableHtml(space) : ''}
+        ${space.type === 'station' ? stationRentHtml() : ''}
+        ${space.type === 'utility' ? utilityRentHtml() : ''}
+        ${owner ? `<div class="owner">${isYours ? 'You own this.' : 'Owned by ' + escapeHtml(owner.name) + '.'}${mortgaged ? ' (Mortgaged)' : ''}${(houses || hasHotel) ? ' ' + buildingsBadge(houses, hasHotel) : ''}</div>` : '<div class="owner">Unowned.</div>'}
+        ${playersHereHtml(p.position)}
+      </div>
+    `;
+  } else if (space.type === 'corner') {
+    body = `
+      <div class="band band-corner">Corner</div>
+      <div class="body">
+        <div class="name">${escapeHtml(space.name)}</div>
+        ${space.sub ? `<div class="sub">${escapeHtml(space.sub)}</div>` : ''}
+        ${space.name === 'The Busy Spot' && state.houseRules.freeParkingJackpot ? `<div class="price">Pot: ${fmtMoney(state.freeParkingPot)}</div>` : ''}
+        ${playersHereHtml(p.position)}
+      </div>
+    `;
+  } else if (space.type === 'tax') {
+    body = `
+      <div class="band band-special">Tax</div>
+      <div class="body">
+        <div class="name">${escapeHtml(space.name)}</div>
+        <div class="sub">${escapeHtml(space.sub)}</div>
+        ${playersHereHtml(p.position)}
+      </div>
+    `;
+  } else if (space.type === 'gotojail') {
+    body = `
+      <div class="band band-special">Off you go</div>
+      <div class="body">
+        <div class="name">${escapeHtml(space.name)}</div>
+        <div class="sub">${escapeHtml(space.sub)}</div>
+      </div>
+    `;
+  } else if (space.type === 'chance') {
+    body = `
+      <div class="band band-chance">Chance</div>
+      <div class="body">
+        <div class="name">Chance</div>
+        <div class="sub">Take a card from the top of the deck.</div>
+      </div>
+    `;
+  } else if (space.type === 'chest') {
+    body = `
+      <div class="band band-chest">Community Chest</div>
+      <div class="body">
+        <div class="name">Community Chest</div>
+        <div class="sub">Take a card from the top of the deck.</div>
+      </div>
+    `;
+  }
+
+  area.className = 'space-card';
+  area.innerHTML = body;
+  area.setAttribute('aria-label', spaceA11yLabel(space, p));
+}
+
+function spaceA11yLabel(space, p) {
+  const owner = findOwner(p.position);
+  let parts = [space.name];
+  if (space.sub) parts.push(space.sub);
+  if (space.price && !owner) parts.push('Price ' + fmtMoney(space.price));
+  if (owner) {
+    parts.push(owner.id === p.id ? 'You own this' : 'Owned by ' + owner.name);
+    if (owner.mortgaged.includes(p.position)) parts.push('Mortgaged');
+  } else if (isPropertySpace(p.position)) {
+    parts.push('Unowned');
+  }
+  return parts.join('. ');
+}
+
+function getBandClass(space) {
+  if (space.type === 'property') return 'band-' + space.group;
+  if (space.type === 'station') return 'band-station';
+  if (space.type === 'utility') return 'band-utility';
+  if (space.type === 'chance') return 'band-chance';
+  if (space.type === 'chest') return 'band-chest';
+  if (space.type === 'corner') return 'band-corner';
+  return 'band-special';
+}
+
+function groupLabel(space) {
+  if (space.type === 'station') return 'Station';
+  if (space.type === 'utility') return 'Utility';
+  if (space.type === 'property') return space.group.replace('-', ' ');
+  return space.type;
+}
+
+function rentTableHtml(space) {
+  const labels = ['Site', '1 house', '2 houses', '3 houses', '4 houses', 'Hotel'];
+  let rows = space.rent.map((r, i) =>
+    `<div><span>${labels[i]}</span><span>${fmtMoney(r)}</span></div>`
+  ).join('');
+  return `<div class="rent-table" aria-label="Rent table">${rows}<div><span>Houses cost</span><span>${fmtMoney(space.houseCost)} each</span></div></div>`;
+}
+
+function stationRentHtml() {
+  return `<div class="rent-table" aria-label="Station rent">
+    <div><span>1 owned</span><span>${fmtMoney(STATION_RENTS[0])}</span></div>
+    <div><span>2 owned</span><span>${fmtMoney(STATION_RENTS[1])}</span></div>
+    <div><span>3 owned</span><span>${fmtMoney(STATION_RENTS[2])}</span></div>
+    <div><span>4 owned</span><span>${fmtMoney(STATION_RENTS[3])}</span></div>
+  </div>`;
+}
+
+function utilityRentHtml() {
+  return `<div class="rent-table" aria-label="Utility rent">
+    <div><span>1 owned</span><span>4 × dice</span></div>
+    <div><span>2 owned</span><span>10 × dice</span></div>
+  </div>`;
+}
+
+function buildingsBadge(houses, hotel) {
+  if (hotel) return '<span class="house-row" aria-label="Hotel"><span class="hotel-icon"></span></span>';
+  if (houses) {
+    let icons = '';
+    for (let i = 0; i < houses; i++) icons += '<span class="house-icon"></span>';
+    return `<span class="house-row" aria-label="${houses} house${houses === 1 ? '' : 's'}">${icons}</span>`;
+  }
+  return '';
+}
+
+function playersHereHtml(pos) {
+  const here = state.players.filter(p => !p.bankrupt && p.position === pos);
+  if (here.length <= 1) return '';
+  const others = here.filter(p => p.id !== currentPlayer().id);
+  if (!others.length) return '';
+  return '<div class="players-on-space">Also here: ' +
+    others.map(p => `<span class="player-pip piece-pip pip-${p.id}" aria-label="${escapeHtml(pieceFor(p).label)}">${pieceFor(p).emoji}</span>${escapeHtml(p.name)}`).join(', ') + '</div>';
+}
+
+function renderDice() {
+  const d1 = document.getElementById('die1');
+  const d2 = document.getElementById('die2');
+  d1.textContent = state.dice[0] || '·';
+  d2.textContent = state.dice[1] || '·';
+}
+
+// ============================================================
+// ACTIONS
+// ============================================================
+
+function renderActions() {
+  const area = document.getElementById('actions-area');
+  const p = currentPlayer();
+
+  if (state.gameOver) {
+    area.innerHTML = `<div class="alert">Game over. ${escapeHtml(state.winner)} wins.</div>
+      <button class="btn btn-primary" onclick="endGameToSetup()">Back to Setup</button>`;
+    return;
+  }
+
+  if (p.isAI) {
+    area.innerHTML = `<div class="card tight"><em>${escapeHtml(p.name)} is taking their turn…</em></div>`;
+    return;
+  }
+
+  let html = '';
+
+  if (state.turnPhase === 'roll') {
+    if (p.inJail) {
+      const canPay = p.money >= PITY_CORNER_FINE;
+      html = `<div class="card tight">
+        <p><strong>You're in The Pity Corner.</strong> Society has put you aside for a while. Pick your way out:</p>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="rollForJail()">Roll for doubles (${3 - p.jailTurns} ${3 - p.jailTurns === 1 ? 'try' : 'tries'} left)</button>
+          <button class="btn" onclick="payToLeave()" ${canPay ? '' : 'disabled'}>Pay €${PITY_CORNER_FINE} fine</button>
+          ${p.getOutCards > 0 ? '<button class="btn" onclick="useGetOutCard()">Use Get Out card</button>' : ''}
+        </div>
+      </div>`;
+    } else {
+      html = `<button class="btn btn-primary" onclick="rollDice()">Roll Dice</button>`;
+    }
+  } else if (state.turnPhase === 'action') {
+    html = `<button class="btn btn-primary" onclick="endTurn()">End Turn</button>`;
+    if (state.doubleCount > 0 && !p.inJail) {
+      html = `<div class="alert">You rolled doubles — roll again.</div>
+        <button class="btn btn-primary" onclick="rollDice()">Roll Again</button>`;
+    }
+  }
+
+  // Trade button — available any time on your turn (with at least one other live player)
+  const tradablePartners = state.players.filter(x => !x.bankrupt && x.id !== p.id);
+  if (tradablePartners.length > 0) {
+    html += `<button class="btn btn-ghost" onclick="openTrade()" style="margin-top:8px;">Propose Trade</button>`;
+  }
+
+  area.innerHTML = html;
+}
+
+function rollDice() {
+  const p = currentPlayer();
+  if (p.isAI) return;
+  doDiceRoll();
+}
+
+function doDiceRoll() {
+  const p = currentPlayer();
+  const d1 = rollDie();
+  const d2 = rollDie();
+  state.dice = [d1, d2];
+  sfxRoll();
+  document.getElementById('die1').classList.add('rolling');
+  document.getElementById('die2').classList.add('rolling');
+  setTimeout(() => {
+    document.getElementById('die1').classList.remove('rolling');
+    document.getElementById('die2').classList.remove('rolling');
+  }, 400);
+  renderDice();
+  const sum = d1 + d2;
+  const isDoubles = d1 === d2;
+
+  if (isDoubles) {
+    state.doubleCount++;
+    if (state.doubleCount >= 3) {
+      announce(p.name + ' rolled doubles three times — straight to The Pity Corner.');
+      sendToJail(p);
+      state.turnPhase = 'action';
+      state.doubleCount = 0;
+      renderGame();
+      saveGame();
+      return;
+    }
+  } else {
+    state.doubleCount = 0;
+  }
+
+  announce(p.name + ' rolled ' + d1 + ' and ' + d2 + (isDoubles ? ' — doubles!' : ''));
+
+  if (state.houseRules.snakeEyesBonus && d1 === 1 && d2 === 1) {
+    p.money += 100;
+    announce(p.name + ' rolled snake eyes — collect €100 bonus.');
+    sfxMoneyIn();
+  }
+
+  movePlayer(p, sum);
+}
+
+function movePlayer(p, steps) {
+  const oldPos = p.position;
+  let newPos = (oldPos + steps) % 40;
+  // Passing GO
+  if (oldPos + steps >= 40) {
+    let salary = GO_SALARY;
+    if (state.houseRules.doubleOnGo && newPos === 0) salary *= 2;
+    // One-shot multiplier from cards (e.g. "double payment this week")
+    if (p.nextGoMultiplier && p.nextGoMultiplier > 1) {
+      salary *= p.nextGoMultiplier;
+      p.nextGoMultiplier = 1;
+      announce(p.name + ' passed GO — bonus week, collected ' + fmtMoney(salary) + ' Disability Allowance.');
+    } else {
+      announce(p.name + ' passed GO — collected ' + fmtMoney(salary) + ' Disability Allowance.');
+    }
+    p.money += salary;
+    sfxPassGo();
+  }
+  p.position = newPos;
+  renderGame();
+  setTimeout(() => landOnSpace(p), pace());
+}
+
+function landOnSpace(p) {
+  const space = BOARD[p.position];
+  announce(p.name + ' landed on ' + space.name + '.');
+
+  if (space.type === 'property' || space.type === 'station' || space.type === 'utility') {
+    handlePropertyLanding(p, space);
+  } else if (space.type === 'tax') {
+    handleTax(p, space);
+  } else if (space.type === 'gotojail') {
+    sendToJail(p);
+    state.turnPhase = 'action';
+    renderGame();
+    saveGame();
+    setTimeout(continueAfterAction, pace());
+  } else if (space.type === 'chance') {
+    drawCard('chance', p);
+  } else if (space.type === 'chest') {
+    drawCard('chest', p);
+  } else if (space.type === 'corner') {
+    if (space.name === 'The Busy Spot' && state.houseRules.freeParkingJackpot && state.freeParkingPot > 0) {
+      const won = state.freeParkingPot;
+      p.money += won;
+      state.freeParkingPot = 0;
+      announce(p.name + ' lands on The Busy Spot — collects the jackpot of ' + fmtMoney(won) + '.');
+      sfxMoneyIn();
+    }
+    state.turnPhase = 'action';
+    renderGame();
+    saveGame();
+    setTimeout(continueAfterAction, pace());
+  }
+}
+
+function handlePropertyLanding(p, space) {
+  const owner = findOwner(p.position);
+  if (!owner) {
+    // Offer to buy
+    if (p.isAI) {
+      aiDecideBuy(p, space);
+    } else {
+      showBuyModal(p, space);
+    }
+  } else if (owner.id === p.id) {
+    // Own property — nothing happens
+    state.turnPhase = 'action';
+    renderGame();
+    saveGame();
+    setTimeout(continueAfterAction, pace());
+  } else {
+    // Pay rent
+    payRent(p, owner, space);
+  }
+}
+
+function payRent(p, owner, space) {
+  if (owner.mortgaged.includes(p.position)) {
+    announce(space.name + ' is mortgaged — no rent due.');
+    state.turnPhase = 'action';
+    renderGame();
+    saveGame();
+    setTimeout(continueAfterAction, pace());
+    return;
+  }
+  let rent = 0;
+  if (space.type === 'property') {
+    const houses = owner.houses[p.position] || 0;
+    const hotel = !!owner.hotels[p.position];
+    if (hotel) rent = space.rent[5];
+    else if (houses > 0) rent = space.rent[houses];
+    else {
+      rent = space.rent[0];
+      if (playerOwnsFullGroup(owner, space.group)) rent *= 2;
+    }
+  } else if (space.type === 'station') {
+    const owned = playerStationsOwned(owner);
+    rent = STATION_RENTS[owned - 1];
+  } else if (space.type === 'utility') {
+    const owned = playerUtilitiesOwned(owner);
+    const sum = state.dice[0] + state.dice[1];
+    rent = sum * UTILITY_MULTIPLIERS[owned - 1];
+  }
+  // If "rentMultiplier" set on player by chance card, override
+  if (state._pendingRentMultiplier && space.type === 'station') {
+    rent *= 2;
+    state._pendingRentMultiplier = false;
+  }
+  if (state._pendingUtilityTenTimes && space.type === 'utility') {
+    const sum = state.dice[0] + state.dice[1];
+    rent = sum * 10;
+    state._pendingUtilityTenTimes = false;
+  }
+
+  transferMoney(p, owner, rent, 'Rent for ' + space.name);
+  state.turnPhase = 'action';
+  renderGame();
+  saveGame();
+
+  // Human player rent receipt with About — skip if AI, or if rescue modal is now open.
+  if (!p.isAI && !state._awaitingRescue && rent > 0 && INFO[space.name]) {
+    showRentReceipt(p, owner, space, rent);
+    return;
+  }
+  setTimeout(continueAfterAction, pace());
+}
+
+function showRentReceipt(p, owner, space, rent) {
+  const actions = [
+    { text: 'About ' + space.name, action: () => showInfoModal(space, () => showRentReceipt(p, owner, space, rent)) },
+    { text: 'Continue', primary: true, action: () => {
+      closeModal();
+      setTimeout(continueAfterAction, 150);
+    }}
+  ];
+  openModal({
+    title: 'Rent paid',
+    body: '<p>You paid <strong>' + fmtMoney(rent) + '</strong> to ' + escapeHtml(owner.name) + ' for <strong>' + escapeHtml(space.name) + '</strong>.</p>',
+    actions: actions
+  });
+}
+
+function handleTax(p, space) {
+  const amount = space.amount;
+  if (p.money < amount) {
+    p.money -= amount;
+    announce(p.name + ' paid ' + space.name + ': ' + fmtMoney(amount) + ' — and is in the red.');
+  } else {
+    p.money -= amount;
+    announce(p.name + ' paid ' + space.name + ': ' + fmtMoney(amount) + '.');
+  }
+  if (state.houseRules.freeParkingJackpot) state.freeParkingPot += amount;
+  sfxMoneyOut();
+  checkBankruptcy(p, null);
+  state.turnPhase = 'action';
+  renderGame();
+  saveGame();
+  setTimeout(continueAfterAction, pace());
+}
+
+function transferMoney(from, to, amount, reason) {
+  const paid = Math.min(amount, from.money);
+  from.money -= paid;
+  if (to) to.money += paid;
+  if (from === currentPlayer()) sfxMoneyOut();
+  announce(from.name + ' paid ' + (to ? to.name : 'the bank') + ' ' + fmtMoney(amount) + (reason ? ' (' + reason + ')' : '') + '.');
+  if (from.money < 0) {
+    checkBankruptcy(from, to);
+  }
+}
+
+function checkBankruptcy(p, creditor) {
+  if (p.money >= 0) return;
+  const useAuto = p.isAI || state.houseRules.autoRescue;
+  if (useAuto) {
+    autoRescue(p, creditor);
+    return;
+  }
+  // Manual rescue — open modal, suspend turn continuation
+  state._awaitingRescue = true;
+  state._rescueCreditor = creditor ? creditor.id : null;
+  showRescueModal(p);
+}
+
+function autoRescue(p, creditor) {
+  if (p.money >= 0) return;
+  const deficitBefore = -p.money;
+  let actionsTaken = [];
+
+  // STEP 1 — Sell houses/hotels on a property, cheapest-property first, one
+  // building at a time until either solvent or no buildings left.
+  // (Monopoly rule: you must liquidate buildings before mortgaging.)
+  const propsByPrice = [...p.properties].sort((a, b) => (BOARD[a].price || 0) - (BOARD[b].price || 0));
+  let sellingDone = false;
+  while (p.money < 0 && !sellingDone) {
+    sellingDone = true;
+    for (const pos of propsByPrice) {
+      const space = BOARD[pos];
+      const refund = Math.floor((space.houseCost || 0) / 2);
+      if (p.hotels[pos]) {
+        delete p.hotels[pos];
+        p.houses[pos] = 4;
+        p.money += refund;
+        actionsTaken.push('sold hotel on ' + space.name);
+        sellingDone = false;
+        if (p.money >= 0) break;
+      } else if (p.houses[pos] && p.houses[pos] > 0) {
+        p.houses[pos]--;
+        if (p.houses[pos] === 0) delete p.houses[pos];
+        p.money += refund;
+        actionsTaken.push('sold a house on ' + space.name);
+        sellingDone = false;
+        if (p.money >= 0) break;
+      }
+    }
+  }
+
+  // STEP 2 — Mortgage unmortgaged, unbuilt properties, cheapest first.
+  if (p.money < 0) {
+    const mortgageable = propsByPrice.filter(pos =>
+      !p.mortgaged.includes(pos) && !(p.houses[pos] > 0) && !p.hotels[pos]
+    );
+    for (const pos of mortgageable) {
+      if (p.money >= 0) break;
+      const space = BOARD[pos];
+      p.money += space.mortgage;
+      p.mortgaged.push(pos);
+      actionsTaken.push('mortgaged ' + space.name);
+    }
+  }
+
+  if (actionsTaken.length > 0) {
+    announce(p.name + ' was short ' + fmtMoney(deficitBefore) + ': ' + actionsTaken.join(', ') + '.');
+  }
+
+  if (p.money < 0) {
+    doBankrupt(p, creditor);
+  }
+}
+
+function doBankrupt(p, creditor) {
+  p.bankrupt = true;
+  announce(p.name + ' is bankrupt.');
+  if (creditor) {
+    for (const pos of p.properties) creditor.properties.push(pos);
+    creditor.money += Math.max(0, p.money);
+  }
+  p.properties = [];
+  p.mortgaged = [];
+  p.houses = {};
+  p.hotels = {};
+  checkWinner();
+}
+
+// ===== Manual rescue =====
+function showRescueModal(p) {
+  if (p.money >= 0) {
+    // Resolved — close and continue turn
+    state._awaitingRescue = false;
+    state._rescueCreditor = null;
+    closeModal();
+    state.turnPhase = 'action';
+    renderGame();
+    saveGame();
+    setTimeout(continueAfterAction, 200);
+    return;
+  }
+  const deficit = -p.money;
+  const actions = [];
+  // Sell buildings first
+  for (const pos of p.properties) {
+    const space = BOARD[pos];
+    const refund = Math.floor((space.houseCost || 0) / 2);
+    if (p.hotels[pos]) {
+      actions.push({
+        text: 'Sell hotel on ' + space.name + ' (+' + fmtMoney(refund) + ')',
+        action: () => rescueSellHotel(p, pos)
+      });
+    } else if (p.houses[pos] && p.houses[pos] > 0) {
+      actions.push({
+        text: 'Sell a house on ' + space.name + ' (+' + fmtMoney(refund) + ')',
+        action: () => rescueSellHouse(p, pos)
+      });
+    }
+  }
+  // Mortgage properties (no buildings, not already mortgaged)
+  for (const pos of p.properties) {
+    if (p.mortgaged.includes(pos)) continue;
+    if (p.houses[pos] > 0 || p.hotels[pos]) continue;
+    const space = BOARD[pos];
+    actions.push({
+      text: 'Mortgage ' + space.name + ' (+' + fmtMoney(space.mortgage) + ')',
+      action: () => rescueMortgage(p, pos)
+    });
+  }
+  // Escape hatches
+  actions.push({
+    text: 'Let the game resolve it for me',
+    action: () => {
+      const creditor = state._rescueCreditor != null ? state.players.find(x => x.id === state._rescueCreditor) : null;
+      state._awaitingRescue = false;
+      state._rescueCreditor = null;
+      closeModal();
+      autoRescue(p, creditor);
+      state.turnPhase = 'action';
+      renderGame();
+      saveGame();
+      setTimeout(continueAfterAction, 200);
+    }
+  });
+  actions.push({
+    text: 'Declare bankruptcy',
+    action: () => {
+      const creditor = state._rescueCreditor != null ? state.players.find(x => x.id === state._rescueCreditor) : null;
+      state._awaitingRescue = false;
+      state._rescueCreditor = null;
+      doBankrupt(p, creditor);
+      closeModal();
+      state.turnPhase = 'action';
+      renderGame();
+      saveGame();
+      setTimeout(continueAfterAction, 200);
+    }
+  });
+
+  // Build a brief property status summary for screen readers
+  const propLines = p.properties.length === 0
+    ? '<p class="muted">You own no properties.</p>'
+    : p.properties.map(pos => {
+        const space = BOARD[pos];
+        let bits = [];
+        if (p.mortgaged.includes(pos)) bits.push('mortgaged');
+        if (p.hotels[pos]) bits.push('hotel');
+        else if (p.houses[pos]) bits.push(p.houses[pos] + ' house' + (p.houses[pos] > 1 ? 's' : ''));
+        const tag = bits.length ? ' — ' + bits.join(', ') : '';
+        return '<div>' + escapeHtml(space.name) + tag + '</div>';
+      }).join('');
+
+  openModal({
+    title: 'You\'re short ' + fmtMoney(deficit),
+    body: '<p>Pick something to liquidate. Buildings sell at half cost; mortgaging returns half the property price.</p>' +
+          '<p><strong>Cash:</strong> ' + fmtMoney(p.money) + '</p>' +
+          '<p><strong>Your properties:</strong></p>' + propLines,
+    actions: actions
+  });
+}
+
+function rescueSellHotel(p, pos) {
+  const space = BOARD[pos];
+  const refund = Math.floor((space.houseCost || 0) / 2);
+  delete p.hotels[pos];
+  p.houses[pos] = 4;
+  p.money += refund;
+  sfxMoneyIn();
+  announce(p.name + ' sold the hotel on ' + space.name + ' for ' + fmtMoney(refund) + '.');
+  saveGame();
+  showRescueModal(p);
+}
+
+function rescueSellHouse(p, pos) {
+  const space = BOARD[pos];
+  const refund = Math.floor((space.houseCost || 0) / 2);
+  p.houses[pos]--;
+  if (p.houses[pos] === 0) delete p.houses[pos];
+  p.money += refund;
+  sfxMoneyIn();
+  announce(p.name + ' sold a house on ' + space.name + ' for ' + fmtMoney(refund) + '.');
+  saveGame();
+  showRescueModal(p);
+}
+
+function rescueMortgage(p, pos) {
+  const space = BOARD[pos];
+  p.money += space.mortgage;
+  p.mortgaged.push(pos);
+  sfxMoneyIn();
+  announce(p.name + ' mortgaged ' + space.name + ' for ' + fmtMoney(space.mortgage) + '.');
+  saveGame();
+  showRescueModal(p);
+}
+
+function checkWinner() {
+  const alive = alivePlayers();
+  if (alive.length <= 1) {
+    state.gameOver = true;
+    state.winner = alive.length === 1 ? alive[0].name : 'Nobody';
+    announce('Game over. Winner: ' + state.winner);
+  }
+}
+
+// ============================================================
+// TRADING
+// ============================================================
+
+// A property is tradeable only if no buildings exist on any property in
+// its colour group (across all owners). Stations and utilities are
+// always tradeable. Mortgaged properties can still be traded; they
+// transfer in their mortgaged state.
+function canTradeProperty(pos) {
+  const space = BOARD[pos];
+  if (space.type !== 'property') return true;
+  const group = space.group;
+  for (const player of state.players) {
+    for (const propPos of player.properties) {
+      const propSpace = BOARD[propPos];
+      if (propSpace.group !== group) continue;
+      if (player.houses[propPos] > 0 || player.hotels[propPos]) return false;
+    }
+  }
+  return true;
+}
+
+function openTrade() {
+  const p = currentPlayer();
+  const partners = state.players.filter(x => !x.bankrupt && x.id !== p.id);
+  if (partners.length === 0) {
+    announce('Nobody to trade with.');
+    return;
+  }
+  if (partners.length === 1) {
+    composeTrade(partners[0].id);
+    return;
+  }
+  const actions = partners.map(partner => ({
+    text: partner.name + ' (' + fmtMoney(partner.money) + ', ' + partner.properties.length + ' propert' + (partner.properties.length === 1 ? 'y' : 'ies') + ')',
+    action: () => composeTrade(partner.id)
+  }));
+  actions.push({ text: 'Cancel', action: closeModal });
+  openModal({
+    title: 'Trade with whom?',
+    body: '<p>Pick a player to make an offer to.</p>',
+    actions: actions
+  });
+}
+
+// Compose an offer modal. `existingOffer` (optional) is used when countering —
+// the form is pre-filled with the swapped values so the counter party can
+// edit them.
+function composeTrade(recipientId, existingOffer) {
+  // The party currently composing. For initial offer it's the current player;
+  // for a counter it's whoever's countering (the previous recipient).
+  let proposerId = currentPlayer().id;
+  if (existingOffer && existingOffer._countering) proposerId = existingOffer.proposerId;
+  const proposer = state.players.find(x => x.id === proposerId);
+  const recipient = state.players.find(x => x.id === recipientId);
+  if (!proposer || !recipient) return;
+
+  const preFromProposer = existingOffer ? existingOffer.fromProposer : { money: 0, props: [], jailCards: 0 };
+  const preFromRecipient = existingOffer ? existingOffer.fromRecipient : { money: 0, props: [], jailCards: 0 };
+
+  const proposerProps = proposer.properties.filter(canTradeProperty);
+  const recipientProps = recipient.properties.filter(canTradeProperty);
+
+  const sideHtml = (player, props, pre, sideKey) => {
+    const propHtml = props.length === 0
+      ? '<p class="muted">No tradeable properties (any building on the group locks the whole group).</p>'
+      : props.map(pos => {
+          const sp = BOARD[pos];
+          const m = player.mortgaged.includes(pos) ? ' (mortgaged)' : '';
+          const checked = pre.props.includes(pos) ? ' checked' : '';
+          return `<div class="checkbox-row"><input type="checkbox" id="trade-${sideKey}-${pos}" data-pos="${pos}" data-side="${sideKey}"${checked}><label for="trade-${sideKey}-${pos}">${escapeHtml(sp.name)}${m}</label></div>`;
+        }).join('');
+    const moneyHtml = `<div class="trade-input-row">
+      <label for="trade-${sideKey}-money">Cash (€):</label>
+      <input type="number" id="trade-${sideKey}-money" min="0" max="${player.money}" value="${pre.money}">
+    </div>`;
+    const jailHtml = player.getOutCards > 0 ? `<div class="trade-input-row">
+      <label for="trade-${sideKey}-jail">Get Out cards (max ${player.getOutCards}):</label>
+      <input type="number" id="trade-${sideKey}-jail" min="0" max="${player.getOutCards}" value="${pre.jailCards}">
+    </div>` : '';
+    return propHtml + moneyHtml + jailHtml;
+  };
+
+  const body = `
+    <p>${escapeHtml(proposer.name)} → ${escapeHtml(recipient.name)}</p>
+    <fieldset class="trade-fieldset">
+      <legend>${escapeHtml(proposer.name)} gives</legend>
+      ${sideHtml(proposer, proposerProps, preFromProposer, 'give')}
+    </fieldset>
+    <fieldset class="trade-fieldset">
+      <legend>${escapeHtml(recipient.name)} gives</legend>
+      ${sideHtml(recipient, recipientProps, preFromRecipient, 'get')}
+    </fieldset>
+  `;
+
+  openModal({
+    title: existingOffer ? 'Counter Offer' : 'Compose Trade',
+    body: body,
+    actions: [
+      { text: 'Send Offer', primary: true, action: () => sendTradeOffer(proposerId, recipientId) },
+      { text: 'Cancel', action: closeModal }
+    ]
+  });
+}
+
+function sendTradeOffer(proposerId, recipientId) {
+  const proposer = state.players.find(x => x.id === proposerId);
+  const recipient = state.players.find(x => x.id === recipientId);
+
+  const giveProps = Array.from(document.querySelectorAll('input[data-side="give"]:checked')).map(el => parseInt(el.dataset.pos, 10));
+  const getProps = Array.from(document.querySelectorAll('input[data-side="get"]:checked')).map(el => parseInt(el.dataset.pos, 10));
+  const giveMoney = Math.max(0, parseInt(document.getElementById('trade-give-money').value, 10) || 0);
+  const getMoney = Math.max(0, parseInt(document.getElementById('trade-get-money').value, 10) || 0);
+  const giveJailEl = document.getElementById('trade-give-jail');
+  const getJailEl = document.getElementById('trade-get-jail');
+  const giveJail = giveJailEl ? Math.max(0, parseInt(giveJailEl.value, 10) || 0) : 0;
+  const getJail = getJailEl ? Math.max(0, parseInt(getJailEl.value, 10) || 0) : 0;
+
+  if (giveMoney > proposer.money) { announce(proposer.name + ' only has ' + fmtMoney(proposer.money) + '.'); return; }
+  if (getMoney > recipient.money) { announce(recipient.name + ' only has ' + fmtMoney(recipient.money) + '.'); return; }
+  if (giveJail > proposer.getOutCards) { announce(proposer.name + ' only has ' + proposer.getOutCards + ' Get Out card' + (proposer.getOutCards === 1 ? '' : 's') + '.'); return; }
+  if (getJail > recipient.getOutCards) { announce(recipient.name + ' only has ' + recipient.getOutCards + ' Get Out card' + (recipient.getOutCards === 1 ? '' : 's') + '.'); return; }
+  if (giveProps.length + getProps.length + giveMoney + getMoney + giveJail + getJail === 0) {
+    announce('An offer needs something on at least one side.');
+    return;
+  }
+
+  const offer = {
+    proposerId, recipientId,
+    fromProposer: { money: giveMoney, props: giveProps, jailCards: giveJail },
+    fromRecipient: { money: getMoney, props: getProps, jailCards: getJail }
+  };
+
+  closeModal();
+  announce(proposer.name + ' sent ' + recipient.name + ' a trade offer.');
+
+  if (recipient.isAI) {
+    setTimeout(() => aiHandleTradeOffer(offer), 600);
+  } else {
+    setTimeout(() => showHandoffThenOffer(offer), 300);
+  }
+}
+
+function describeOffer(offer) {
+  const proposer = state.players.find(x => x.id === offer.proposerId);
+  const recipient = state.players.find(x => x.id === offer.recipientId);
+  const fmtSide = (side, who) => {
+    const parts = [];
+    if (side.money > 0) parts.push(fmtMoney(side.money));
+    if (side.props.length > 0) {
+      parts.push(side.props.map(pos => {
+        const owner = state.players.find(pl => pl.properties.includes(pos));
+        const m = owner && owner.mortgaged.includes(pos) ? ' (mortgaged)' : '';
+        return BOARD[pos].name + m;
+      }).join(', '));
+    }
+    if (side.jailCards > 0) parts.push(side.jailCards + ' Get Out card' + (side.jailCards > 1 ? 's' : ''));
+    if (parts.length === 0) return '<p><strong>' + escapeHtml(who) + ' gives:</strong> nothing</p>';
+    return '<p><strong>' + escapeHtml(who) + ' gives:</strong> ' + parts.join(', ') + '</p>';
+  };
+  return fmtSide(offer.fromProposer, proposer.name) + fmtSide(offer.fromRecipient, recipient.name);
+}
+
+function showHandoffThenOffer(offer) {
+  const recipient = state.players.find(x => x.id === offer.recipientId);
+  openModal({
+    title: 'Pass to ' + recipient.name,
+    body: '<p>A trade offer is waiting. Hand the phone to <strong>' + escapeHtml(recipient.name) + '</strong>, then tap below.</p>',
+    actions: [{ text: 'I\'m ' + recipient.name + ' — show offer', primary: true, action: () => showTradeOfferToRecipient(offer) }]
+  });
+}
+
+function showTradeOfferToRecipient(offer) {
+  const proposer = state.players.find(x => x.id === offer.proposerId);
+  const recipient = state.players.find(x => x.id === offer.recipientId);
+  const desc = describeOffer(offer);
+  openModal({
+    title: 'Offer from ' + proposer.name,
+    body: desc,
+    actions: [
+      { text: 'Accept', primary: true, action: () => acceptTradeOffer(offer) },
+      { text: 'Counter', action: () => composeTrade(offer.proposerId, {
+          _countering: true,
+          proposerId: offer.recipientId,
+          recipientId: offer.proposerId,
+          fromProposer: offer.fromRecipient,
+          fromRecipient: offer.fromProposer
+        }) },
+      { text: 'Reject', action: () => rejectTradeOffer(offer) }
+    ]
+  });
+}
+
+function acceptTradeOffer(offer) {
+  const proposer = state.players.find(x => x.id === offer.proposerId);
+  const recipient = state.players.find(x => x.id === offer.recipientId);
+
+  // Re-validate (state may have shifted)
+  if (offer.fromProposer.money > proposer.money || offer.fromRecipient.money > recipient.money ||
+      offer.fromProposer.jailCards > proposer.getOutCards || offer.fromRecipient.jailCards > recipient.getOutCards) {
+    announce('Trade no longer valid — funds or cards changed.');
+    closeModal();
+    return;
+  }
+
+  // Proposer → Recipient
+  proposer.money -= offer.fromProposer.money;
+  recipient.money += offer.fromProposer.money;
+  proposer.getOutCards -= offer.fromProposer.jailCards;
+  recipient.getOutCards += offer.fromProposer.jailCards;
+  for (const pos of offer.fromProposer.props) {
+    proposer.properties = proposer.properties.filter(x => x !== pos);
+    recipient.properties.push(pos);
+    if (proposer.mortgaged.includes(pos)) {
+      proposer.mortgaged = proposer.mortgaged.filter(x => x !== pos);
+      recipient.mortgaged.push(pos);
+    }
+  }
+  // Recipient → Proposer
+  recipient.money -= offer.fromRecipient.money;
+  proposer.money += offer.fromRecipient.money;
+  recipient.getOutCards -= offer.fromRecipient.jailCards;
+  proposer.getOutCards += offer.fromRecipient.jailCards;
+  for (const pos of offer.fromRecipient.props) {
+    recipient.properties = recipient.properties.filter(x => x !== pos);
+    proposer.properties.push(pos);
+    if (recipient.mortgaged.includes(pos)) {
+      recipient.mortgaged = recipient.mortgaged.filter(x => x !== pos);
+      proposer.mortgaged.push(pos);
+    }
+  }
+
+  sfxMoneyIn();
+  announce('Trade accepted. ' + proposer.name + ' and ' + recipient.name + ' have exchanged assets.');
+  closeModal();
+  renderGame();
+  saveGame();
+  resumeAfterAITrade();
+}
+
+function rejectTradeOffer(offer) {
+  const recipient = state.players.find(x => x.id === offer.recipientId);
+  announce(recipient.name + ' rejected the trade.');
+  closeModal();
+  resumeAfterAITrade();
+}
+
+// If the trade that just resolved was AI-initiated, the proposing AI is
+// still the current player and needs to carry on with the rest of its turn.
+function resumeAfterAITrade() {
+  if (!state._aiInitiatedTrade) return;
+  const aiId = state._aiInitiatedTrade.aiId;
+  state._aiInitiatedTrade = null;
+  const ai = state.players.find(x => x.id === aiId);
+  if (ai && currentPlayer().id === aiId && !state.gameOver) {
+    aiNext(aiTakeTurn);
+  }
+}
+
+function aiHandleTradeOffer(offer) {
+  const ai = state.players.find(x => x.id === offer.recipientId);
+  const decision = aiEvaluateTradeOffer(ai, offer);
+  const desc = describeOffer(offer);
+  openModal({
+    title: ai.name + ' considers the offer',
+    body: desc + '<p><em>' + escapeHtml(ai.name) + ' is thinking…</em></p>',
+    actions: [{ text: 'See ' + ai.name + '\'s response', primary: true, action: () => {
+      if (decision.accept) acceptTradeOffer(offer);
+      else rejectTradeOffer(offer);
+    }}]
+  });
+}
+
+function aiEvaluateTradeOffer(ai, offer) {
+  // AI receives `fromProposer` and gives `fromRecipient`.
+  const valueOf = (side) => {
+    let v = side.money;
+    for (const pos of side.props) {
+      const sp = BOARD[pos];
+      let pv = sp.price || 0;
+      // Mortgaged properties worth less
+      if (state.players.some(pl => pl.mortgaged.includes(pos))) pv = Math.floor(pv / 2);
+      v += pv;
+    }
+    v += side.jailCards * 50;
+    return v;
+  };
+  const receiveValue = valueOf(offer.fromProposer);
+  const giveValue = valueOf(offer.fromRecipient);
+  // Require 10% net gain to accept; never give up more cash than the AI can spare.
+  if (offer.fromRecipient.money > ai.money * 0.5) return { accept: false, receiveValue, giveValue };
+  return { accept: receiveValue >= giveValue * 1.1, receiveValue, giveValue };
+}
+
+// Look for a colour group where AI is one short of monopoly, and the
+// missing piece is held by someone willing to part with it. Returns an
+// offer object or null if no opportunity is found.
+function findAITradeOpportunity(ai) {
+  for (const groupName in GROUPS) {
+    const positions = GROUPS[groupName];
+    if (positions.length < 2) continue;
+    const aiOwns = positions.filter(pos => ai.properties.includes(pos));
+    if (aiOwns.length !== positions.length - 1) continue;
+    const missing = positions.find(pos => !ai.properties.includes(pos));
+    const owner = state.players.find(pl => pl.properties.includes(missing));
+    if (!owner || owner.id === ai.id || owner.bankrupt) continue;
+    if (!canTradeProperty(missing)) continue; // buildings on group lock it
+    if (owner.mortgaged.includes(missing)) continue; // skip mortgaged target — too messy
+
+    const missingSpace = BOARD[missing];
+    const targetValue = Math.floor(missingSpace.price * 1.3); // willing to pay 30% premium
+
+    // Option A — straight cash buy if the AI has plenty
+    if (ai.money >= targetValue + 400) {
+      const offer = {
+        proposerId: ai.id,
+        recipientId: owner.id,
+        fromProposer: { money: targetValue, props: [], jailCards: 0 },
+        fromRecipient: { money: 0, props: [missing], jailCards: 0 }
+      };
+      if (recipientWouldLikelyAccept(owner, offer)) return offer;
+    }
+
+    // Option B — swap a surplus property + cash sweetener
+    // Surplus = a property the AI owns where it doesn't have a near-monopoly
+    const surplus = ai.properties.filter(pos => {
+      if (ai.mortgaged.includes(pos)) return false;
+      if (!canTradeProperty(pos)) return false;
+      const sp = BOARD[pos];
+      if (sp.type !== 'property') return true; // stations/utilities are surplus-ish
+      const groupPositions = GROUPS[sp.group];
+      const aiCount = groupPositions.filter(p => ai.properties.includes(p)).length;
+      return aiCount === 1 && groupPositions.length > 1; // owns only 1 of a multi-set
+    });
+    if (surplus.length > 0) {
+      surplus.sort((a, b) => (BOARD[a].price || 0) - (BOARD[b].price || 0));
+      const give = surplus[0];
+      const giveValue = BOARD[give].price || 0;
+      const cashNeeded = Math.max(0, targetValue - giveValue);
+      const cash = Math.min(cashNeeded, Math.floor(ai.money * 0.4));
+      const offer = {
+        proposerId: ai.id,
+        recipientId: owner.id,
+        fromProposer: { money: cash, props: [give], jailCards: 0 },
+        fromRecipient: { money: 0, props: [missing], jailCards: 0 }
+      };
+      if (recipientWouldLikelyAccept(owner, offer)) return offer;
+    }
+  }
+  return null;
+}
+
+function recipientWouldLikelyAccept(recipient, offer) {
+  if (recipient.isAI) return aiEvaluateTradeOffer(recipient, offer).accept;
+  // For human recipient, assume they accept if net value is favourable to them.
+  const valueOf = (side) => {
+    let v = side.money;
+    for (const pos of side.props) {
+      let pv = BOARD[pos].price || 0;
+      if (state.players.some(pl => pl.mortgaged.includes(pos))) pv = Math.floor(pv / 2);
+      v += pv;
+    }
+    v += side.jailCards * 50;
+    return v;
+  };
+  // Recipient's perspective: receive=fromProposer, give=fromRecipient
+  return valueOf(offer.fromProposer) >= valueOf(offer.fromRecipient);
+}
+
+// Called at the start of an AI's turn. Returns true if a trade was
+// proposed and the rest of the turn must wait for it to resolve.
+function aiConsiderTrade(ai) {
+  const offer = findAITradeOpportunity(ai);
+  if (!offer) return false;
+  const target = state.players.find(x => x.id === offer.recipientId);
+  state._aiInitiatedTrade = { aiId: ai.id };
+  announce(ai.name + ' wants to trade with ' + target.name + '.');
+  setTimeout(() => {
+    if (target.isAI) {
+      aiHandleTradeOffer(offer);
+    } else {
+      showHandoffThenOffer(offer);
+    }
+  }, 700);
+  return true;
+}
+
+// ============================================================
+// BUY MODAL
+// ============================================================
+
+function showBuyModal(p, space) {
+  const canBuy = p.money >= space.price;
+  const hasInfo = !!INFO[space.name];
+  const actions = [
+    { text: 'Buy', primary: true, disabled: !canBuy, action: () => buyProperty(p, space) },
+    { text: 'Decline', action: () => declineProperty(p, space) },
+  ];
+  if (hasInfo) {
+    actions.push({ text: 'About ' + space.name, action: () => showInfoModal(space, () => showBuyModal(p, space)) });
+  }
+  openModal({
+    title: 'Buy ' + space.name + '?',
+    body: `
+      <p>${escapeHtml(space.name)} is unowned.</p>
+      <p><strong>Price:</strong> ${fmtMoney(space.price)}</p>
+      <p><strong>Your cash:</strong> ${fmtMoney(p.money)}</p>
+      ${space.type === 'property' ? `<p class="muted">Site rent ${fmtMoney(space.rent[0])}, full set doubles it.</p>` : ''}
+    `,
+    actions: actions
+  });
+}
+
+function showInfoModal(space, onBack) {
+  const info = INFO[space.name] || 'No description available.';
+  openModal({
+    title: 'About ' + space.name,
+    body: '<p>' + escapeHtml(info) + '</p>',
+    actions: [
+      { text: onBack ? 'Back' : 'Close', action: onBack || closeModal }
+    ]
+  });
+}
+
+function buyProperty(p, space) {
+  p.money -= space.price;
+  p.properties.push(p.position);
+  sfxBuy();
+  announce(p.name + ' bought ' + space.name + ' for ' + fmtMoney(space.price) + '.');
+  closeModal();
+  state.turnPhase = 'action';
+  renderGame();
+  saveGame();
+  setTimeout(continueAfterAction, pace());
+}
+
+function declineProperty(p, space) {
+  announce(p.name + ' declined to buy ' + space.name + '.');
+  closeModal();
+  if (state.houseRules.auctions) {
+    setTimeout(() => startAuction(p, space), pace());
+    return;
+  }
+  state.turnPhase = 'action';
+  renderGame();
+  saveGame();
+  setTimeout(continueAfterAction, pace());
+}
+
+// ============================================================
+// AUCTIONS
+// ============================================================
+
+// When a property is declined, all non-bankrupt players (including the
+// one who declined) may bid. Sequential ascending auction: rotate through
+// bidders, each can raise or pass. Last bidder standing wins at their bid.
+// If nobody bids, the property stays with the bank.
+function startAuction(lander, space) {
+  const pos = space.pos;
+  // Rotate bidders so the player to the lander's left goes first
+  const live = state.players.filter(x => !x.bankrupt);
+  const landerIdx = live.findIndex(x => x.id === lander.id);
+  const ordered = live.slice(landerIdx + 1).concat(live.slice(0, landerIdx + 1));
+  state._auction = {
+    pos: pos,
+    highBid: 0,
+    highBidderId: null,
+    activeBidderIds: ordered.map(x => x.id),
+    currentIdx: 0,
+    landerId: lander.id
+  };
+  announce('Auction opens on ' + space.name + '. Starting bid €1.');
+  setTimeout(runAuctionTurn, 600);
+}
+
+function runAuctionTurn() {
+  const a = state._auction;
+  if (!a) return;
+  // Auction ends when only one active bidder remains (and they've made at
+  // least one bid — i.e. they hold the high bid). Otherwise everyone has
+  // passed without bidding.
+  if (a.activeBidderIds.length === 0) return finishAuction();
+  if (a.activeBidderIds.length === 1 && a.highBidderId === a.activeBidderIds[0]) {
+    return finishAuction();
+  }
+
+  // Wrap currentIdx
+  if (a.currentIdx >= a.activeBidderIds.length) a.currentIdx = 0;
+  const bidderId = a.activeBidderIds[a.currentIdx];
+  const bidder = state.players.find(x => x.id === bidderId);
+  if (!bidder) {
+    a.activeBidderIds.splice(a.currentIdx, 1);
+    return runAuctionTurn();
+  }
+
+  if (bidder.isAI) {
+    setTimeout(() => aiAuctionTurn(bidder), 700);
+  } else {
+    showBidModal(bidder);
+  }
+}
+
+function showBidModal(bidder) {
+  const a = state._auction;
+  const space = BOARD[a.pos];
+  const highBidderName = a.highBidderId != null
+    ? state.players.find(x => x.id === a.highBidderId).name
+    : 'nobody';
+  const minNextBid = a.highBid + 1;
+  const remaining = a.activeBidderIds.length;
+
+  const body = `
+    <p><strong>${escapeHtml(space.name)}</strong> — list price ${fmtMoney(space.price)}.</p>
+    <p>Current high bid: <strong>${fmtMoney(a.highBid)}</strong> (${escapeHtml(highBidderName)})</p>
+    <p>Your cash: ${fmtMoney(bidder.money)}. Bidders still in: ${remaining}.</p>
+    <div class="trade-input-row">
+      <label for="bid-amount">Custom bid (€):</label>
+      <input type="number" id="bid-amount" min="${minNextBid}" max="${bidder.money}" value="${minNextBid}">
+    </div>
+  `;
+
+  const quick = [10, 50, 100];
+  const actions = [];
+  for (const inc of quick) {
+    const next = a.highBid + inc;
+    if (next <= bidder.money) {
+      actions.push({ text: '+' + fmtMoney(inc) + ' (bid ' + fmtMoney(next) + ')', action: () => placeBid(bidder.id, next) });
+    }
+  }
+  actions.push({ text: 'Bid custom amount', primary: true, action: () => {
+    const val = parseInt(document.getElementById('bid-amount').value, 10) || 0;
+    placeBid(bidder.id, val);
+  }});
+  actions.push({ text: 'Pass', action: () => passBid(bidder.id) });
+
+  openModal({
+    title: 'Auction: ' + space.name,
+    body: body,
+    actions: actions
+  });
+}
+
+function placeBid(bidderId, amount) {
+  const a = state._auction;
+  const bidder = state.players.find(x => x.id === bidderId);
+  if (!a || !bidder) return;
+  if (amount <= a.highBid) {
+    announce('Bid must beat ' + fmtMoney(a.highBid) + '.');
+    return;
+  }
+  if (amount > bidder.money) {
+    announce(bidder.name + ' only has ' + fmtMoney(bidder.money) + '.');
+    return;
+  }
+  a.highBid = amount;
+  a.highBidderId = bidderId;
+  announce(bidder.name + ' bid ' + fmtMoney(amount) + '.');
+  closeModal();
+  a.currentIdx++;
+  setTimeout(runAuctionTurn, 500);
+}
+
+function passBid(bidderId) {
+  const a = state._auction;
+  if (!a) return;
+  const bidder = state.players.find(x => x.id === bidderId);
+  announce((bidder ? bidder.name : 'Player') + ' passes.');
+  // Remove from active bidders; keep currentIdx pointing at next bidder
+  const idx = a.activeBidderIds.indexOf(bidderId);
+  if (idx >= 0) a.activeBidderIds.splice(idx, 1);
+  // If currentIdx was at or after removed, it now points at next; clamp
+  if (a.currentIdx >= a.activeBidderIds.length) a.currentIdx = 0;
+  closeModal();
+  setTimeout(runAuctionTurn, 400);
+}
+
+function aiAuctionTurn(ai) {
+  const a = state._auction;
+  const space = BOARD[a.pos];
+  // Max value the AI will pay: based on price and cash reserve.
+  // More aggressive if they need the property (would complete a colour set).
+  const wouldComplete = (() => {
+    if (space.type !== 'property') return false;
+    const groupOwned = state.players.find(pl => pl.id === ai.id).properties
+      .filter(pos => BOARD[pos].group === space.group).length;
+    const groupTotal = BOARD.filter(b => b.group === space.group).length;
+    return groupOwned === groupTotal - 1;
+  })();
+  let maxPay = Math.floor(space.price * (wouldComplete ? 1.4 : 0.9));
+  // Cap at half the AI's cash so it doesn't ruin itself
+  maxPay = Math.min(maxPay, Math.floor(ai.money * 0.5));
+  // Small jitter
+  maxPay += Math.floor((Math.random() - 0.5) * 30);
+
+  if (a.highBid >= maxPay) {
+    passBid(ai.id);
+    return;
+  }
+  // Bid the smallest increment above current high
+  const inc = a.highBid === 0 ? 10 : Math.max(5, Math.floor(a.highBid * 0.1));
+  const bid = Math.min(a.highBid + inc, maxPay);
+  if (bid <= a.highBid) {
+    passBid(ai.id);
+    return;
+  }
+  placeBid(ai.id, bid);
+}
+
+function finishAuction() {
+  const a = state._auction;
+  if (!a) return;
+  const space = BOARD[a.pos];
+  if (a.highBidderId != null && a.highBid > 0) {
+    const winner = state.players.find(x => x.id === a.highBidderId);
+    winner.money -= a.highBid;
+    winner.properties.push(a.pos);
+    sfxBuy();
+    announce(winner.name + ' won ' + space.name + ' at auction for ' + fmtMoney(a.highBid) + '.');
+  } else {
+    announce(space.name + ' received no bids and stays unowned.');
+  }
+  state._auction = null;
+  state.turnPhase = 'action';
+  renderGame();
+  saveGame();
+  setTimeout(continueAfterAction, pace());
+}
+
+// ============================================================
+// CARDS
+// ============================================================
+
+function drawCard(deckName, p) {
+  const deck = deckName === 'chance' ? state.chanceDeck : state.chestDeck;
+  const idxKey = deckName === 'chance' ? 'chanceIdx' : 'chestIdx';
+  const card = deck[state[idxKey] % deck.length];
+  state[idxKey]++;
+  sfxCard();
+  announce(p.name + ' draws ' + (deckName === 'chance' ? 'Chance' : 'Community Chest') + ': ' + card.text);
+  setTimeout(() => applyCardEffect(p, card), pace());
+}
+
+function applyCardEffect(p, card, opts) {
+  const e = card.effect;
+  const suppressContinue = !!(opts && opts.suppressContinue);
+  switch (e.type) {
+    case 'GOTO': {
+      if (e.pos < p.position) {
+        // Passing GO
+        if (e.skipSalary) {
+          announce(p.name + ' rushed past GO without collecting.');
+        } else {
+          const salary = state.houseRules.doubleOnGo && e.pos === 0 ? GO_SALARY * 2 : GO_SALARY;
+          p.money += salary;
+          announce(p.name + ' passed GO — collected ' + fmtMoney(salary) + '.');
+          sfxPassGo();
+        }
+      }
+      p.position = e.pos;
+      renderGame();
+      setTimeout(() => landOnSpace(p), pace());
+      return;
+    }
+    case 'GOTO_NEAREST_STATION': {
+      const next = STATIONS.find(s => s > p.position) || STATIONS[0];
+      if (next < p.position) {
+        if (e.skipSalary) {
+          announce(p.name + ' rushed past GO without collecting.');
+        } else {
+          p.money += GO_SALARY;
+          announce(p.name + ' passed GO.');
+          sfxPassGo();
+        }
+      }
+      p.position = next;
+      state._pendingRentMultiplier = true;
+      renderGame();
+      setTimeout(() => landOnSpace(p), pace());
+      return;
+    }
+    case 'GOTO_NEAREST_UTILITY': {
+      const next = UTILITIES.find(u => u > p.position) || UTILITIES[0];
+      if (next < p.position) {
+        if (e.skipSalary) {
+          announce(p.name + ' rushed past GO without collecting.');
+        } else {
+          p.money += GO_SALARY;
+          announce(p.name + ' passed GO.');
+          sfxPassGo();
+        }
+      }
+      p.position = next;
+      state._pendingUtilityTenTimes = true;
+      // Re-roll dice for utility calc
+      state.dice = [rollDie(), rollDie()];
+      renderDice();
+      renderGame();
+      setTimeout(() => landOnSpace(p), pace());
+      return;
+    }
+    case 'COLLECT': {
+      p.money += e.amount;
+      sfxMoneyIn();
+      announce(p.name + ' collected ' + fmtMoney(e.amount) + '.');
+      break;
+    }
+    case 'PAY': {
+      p.money -= e.amount;
+      if (state.houseRules.freeParkingJackpot) state.freeParkingPot += e.amount;
+      sfxMoneyOut();
+      announce(p.name + ' paid ' + fmtMoney(e.amount) + '.');
+      checkBankruptcy(p, null);
+      break;
+    }
+    case 'GET_OUT': {
+      p.getOutCards++;
+      announce(p.name + ' got a Get Out of The Pity Corner card.');
+      break;
+    }
+    case 'GO_TO_JAIL': {
+      sendToJail(p);
+      break;
+    }
+    case 'BACK_3': {
+      p.position = (p.position - 3 + 40) % 40;
+      renderGame();
+      setTimeout(() => landOnSpace(p), pace());
+      return;
+    }
+    case 'PAY_EACH': {
+      const others = state.players.filter(x => !x.bankrupt && x.id !== p.id);
+      const total = others.length * e.amount;
+      for (const o of others) o.money += e.amount;
+      p.money -= total;
+      announce(p.name + ' paid each player ' + fmtMoney(e.amount) + ' (total ' + fmtMoney(total) + ').');
+      sfxMoneyOut();
+      checkBankruptcy(p, null);
+      break;
+    }
+    case 'COLLECT_EACH': {
+      const others = state.players.filter(x => !x.bankrupt && x.id !== p.id);
+      let total = 0;
+      for (const o of others) {
+        const give = Math.min(o.money, e.amount);
+        o.money -= give;
+        total += give;
+      }
+      p.money += total;
+      sfxMoneyIn();
+      announce(p.name + ' collected ' + fmtMoney(e.amount) + ' from each player (total ' + fmtMoney(total) + ').');
+      break;
+    }
+    case 'COLLECT_NEXT': {
+      // Collect a fixed amount from the next non-bankrupt player in turn order.
+      const idx = state.currentIdx;
+      let next = (idx + 1) % state.players.length;
+      while (state.players[next].bankrupt && next !== idx) {
+        next = (next + 1) % state.players.length;
+      }
+      if (next === idx) {
+        announce('No one to collect from.');
+        break;
+      }
+      const target = state.players[next];
+      const owed = e.amount || 0;
+      const give = Math.min(target.money, owed);
+      target.money -= give;
+      p.money += give;
+      sfxMoneyIn();
+      announce(p.name + ' collected ' + fmtMoney(give) + ' from ' + target.name + '.');
+      if (target.money <= 0) checkBankruptcy(target, p);
+      break;
+    }
+    case 'NEXT_GO_BONUS': {
+      // Multiplier applies to the player's next pass over GO (then clears).
+      const mult = e.multiplier || 2;
+      p.nextGoMultiplier = mult;
+      announce(p.name + ' has a bonus payment waiting — next pass over GO pays ' + (mult === 2 ? 'double' : (mult + ' times normal')) + '.');
+      break;
+    }
+    case 'CHOICE': {
+      // Card offers the player two or more options. Each option carries its own effect.
+      const opts = e.options || [];
+      if (opts.length === 0) break;
+      if (p.isAI) {
+        const pick = aiPickChoice(p, opts);
+        announce(p.name + ' chose: ' + pick.label);
+        // Defer so the choice announcement is heard before the consequence
+        setTimeout(() => applyCardEffect(p, { effect: pick.effect }), pace());
+        return;
+      }
+      openModal({
+        title: 'Choose your move',
+        body: '<p>' + escapeHtml(card.text || '') + '</p>',
+        actions: opts.map(opt => ({
+          text: opt.label,
+          action: () => {
+            closeModal();
+            announce(p.name + ' chose: ' + opt.label);
+            setTimeout(() => applyCardEffect(p, { effect: opt.effect }), 250);
+          }
+        }))
+      });
+      return; // wait for player choice — do not fall through to continueAfterAction
+    }
+    case 'SEQUENCE': {
+      // Run a list of effects in order. Each step gets its own announcement,
+      // queued so VoiceOver hears them in sequence. Any movement effect
+      // (GOTO/BACK_3/GO_TO_JAIL/GOTO_NEAREST_*) MUST be the last step,
+      // because movement effects handle their own continuation.
+      const steps = e.steps || [];
+      if (steps.length === 0) break;
+      let i = 0;
+      function runStep() {
+        if (i >= steps.length) return;
+        const sub = steps[i];
+        const isLast = i === steps.length - 1;
+        i++;
+        if (isLast) {
+          applyCardEffect(p, { effect: sub });
+        } else {
+          applyCardEffect(p, { effect: sub }, { suppressContinue: true });
+          whenAnnouncementsIdle(() => setTimeout(runStep, 300));
+        }
+      }
+      runStep();
+      return;
+    }
+    case 'REPAIRS': {
+      let total = 0;
+      for (const pos of p.properties) {
+        total += (p.houses[pos] || 0) * e.perHouse;
+        if (p.hotels[pos]) total += e.perHotel;
+      }
+      p.money -= total;
+      if (state.houseRules.freeParkingJackpot) state.freeParkingPot += total;
+      sfxMoneyOut();
+      announce(p.name + ' paid repairs: ' + fmtMoney(total) + '.');
+      checkBankruptcy(p, null);
+      break;
+    }
+    case 'NO_OP': {
+      // Pure flavour card — the joke is that nothing happens.
+      break;
+    }
+    case 'REPOSSESS': {
+      // Bank takes the player's most valuable property and pays a fixed amount.
+      // Any houses/hotels on it are sold at half cost (added to the payout).
+      const amount = e.amount || 100;
+      const allOwned = [...p.properties];
+      if (allOwned.length === 0) {
+        announce(p.name + ' has nothing to repossess. Card has no effect.');
+        break;
+      }
+      // Auto-pick the highest-value property
+      let target = allOwned[0];
+      let highVal = BOARD[target].price || 0;
+      for (const pos of allOwned) {
+        const v = BOARD[pos].price || 0;
+        if (v > highVal) { target = pos; highVal = v; }
+      }
+      const space = BOARD[target];
+      const houseCost = space.houseCost || 0;
+      let buildingsRefund = 0;
+      if (p.hotels[target]) {
+        buildingsRefund = Math.floor((5 * houseCost) / 2);
+        delete p.hotels[target];
+      } else if (p.houses[target]) {
+        buildingsRefund = Math.floor((p.houses[target] * houseCost) / 2);
+        delete p.houses[target];
+      }
+      p.properties = p.properties.filter(x => x !== target);
+      p.mortgaged = p.mortgaged.filter(x => x !== target);
+      const total = amount + buildingsRefund;
+      p.money += total;
+      sfxMoneyOut(); // mournful tone — it's a loss disguised as a payout
+      announce('The bank repossessed ' + space.name + ' from ' + p.name + '. Paid ' + fmtMoney(total) + (buildingsRefund ? ' (incl. ' + fmtMoney(buildingsRefund) + ' for buildings)' : '') + '.');
+      break;
+    }
+  }
+  if (suppressContinue) return;
+  state.turnPhase = 'action';
+  renderGame();
+  saveGame();
+  setTimeout(continueAfterAction, pace());
+}
+
+// ============================================================
+// JAIL
+// ============================================================
+
+function sendToJail(p) {
+  p.position = 10;
+  p.inJail = true;
+  p.jailTurns = 0;
+  state.doubleCount = 0;
+  sfxJail();
+  announce(p.name + ' is sent to The Pity Corner.');
+}
+
+function rollForJail() {
+  const p = currentPlayer();
+  if (!p.inJail) return;
+  const d1 = rollDie();
+  const d2 = rollDie();
+  state.dice = [d1, d2];
+  sfxRoll();
+  renderDice();
+  announce(p.name + ' rolled ' + d1 + ' and ' + d2 + '.');
+  if (d1 === d2) {
+    p.inJail = false;
+    p.jailTurns = 0;
+    announce(p.name + ' rolled doubles — out of The Pity Corner.');
+    movePlayer(p, d1 + d2);
+  } else {
+    p.jailTurns++;
+    if (p.jailTurns >= 3) {
+      announce(p.name + ' has served three turns — must pay the fine.');
+      if (p.money >= PITY_CORNER_FINE) {
+        p.money -= PITY_CORNER_FINE;
+        if (state.houseRules.freeParkingJackpot) state.freeParkingPot += PITY_CORNER_FINE;
+        sfxMoneyOut();
+        p.inJail = false;
+        p.jailTurns = 0;
+        movePlayer(p, d1 + d2);
+      } else {
+        checkBankruptcy(p, null);
+        state.turnPhase = 'action';
+        renderGame();
+        saveGame();
+        setTimeout(continueAfterAction, pace());
+      }
+    } else {
+      state.turnPhase = 'action';
+      renderGame();
+      saveGame();
+      setTimeout(continueAfterAction, pace());
+    }
+  }
+}
+
+function payToLeave() {
+  const p = currentPlayer();
+  if (p.money < PITY_CORNER_FINE) return;
+  p.money -= PITY_CORNER_FINE;
+  if (state.houseRules.freeParkingJackpot) state.freeParkingPot += PITY_CORNER_FINE;
+  sfxMoneyOut();
+  p.inJail = false;
+  p.jailTurns = 0;
+  announce(p.name + ' paid €' + PITY_CORNER_FINE + ' and left The Pity Corner.');
+  state.turnPhase = 'roll';
+  renderGame();
+  saveGame();
+}
+
+function useGetOutCard() {
+  const p = currentPlayer();
+  if (p.getOutCards <= 0) return;
+  p.getOutCards--;
+  p.inJail = false;
+  p.jailTurns = 0;
+  announce(p.name + ' used a Get Out card.');
+  state.turnPhase = 'roll';
+  renderGame();
+  saveGame();
+}
+
+// ============================================================
+// TURN MANAGEMENT
+// ============================================================
+
+function continueAfterAction() {
+  // If a manual rescue modal is open, don't progress the turn until it resolves.
+  if (state._awaitingRescue) return;
+  // If player rolled doubles and is not in jail, allow another roll
+  // (handled in renderActions). Otherwise do nothing — wait for End Turn.
+  renderGame();
+  if (currentPlayer().isAI && !state.gameOver) {
+    aiNext(aiContinue);
+  }
+}
+
+function endTurn() {
+  if (state.gameOver) return;
+  state.doubleCount = 0;
+  state.dice = [0, 0];
+  // Reset per-turn AI flags so the next turn starts fresh
+  state.players.forEach(pl => { pl._consideredTradeThisTurn = false; });
+  // Advance to next non-bankrupt player
+  do {
+    state.currentIdx = (state.currentIdx + 1) % state.players.length;
+  } while (state.players[state.currentIdx].bankrupt);
+  state.turnPhase = 'roll';
+  saveGame();
+  // Handoff between physical players if there's more than one human in the game.
+  const next = currentPlayer();
+  const humanCount = state.players.filter(x => !x.isAI && !x.bankrupt).length;
+  if (humanCount > 1 && !next.isAI) {
+    showHandoffModal(next);
+    return;
+  }
+  announce("It's " + next.name + "'s turn.");
+  renderGame();
+  if (next.isAI) aiNext(aiTakeTurn);
+}
+
+function showHandoffModal(next) {
+  // Hide game info momentarily — render the screen but the modal covers it.
+  renderGame();
+  openModal({
+    title: 'Pass the phone',
+    body: '<p style="font-size:1.15rem; text-align:center; margin:18px 0;">Hand the phone to</p>' +
+          '<p style="font-size:1.8rem; text-align:center; font-family:\'Special Elite\', monospace; color:var(--accent); margin:18px 0;">' + escapeHtml(next.name) + '</p>' +
+          '<p style="text-align:center; margin:18px 0;">When ' + escapeHtml(next.name) + ' has the phone, tap below to start their turn.</p>',
+    actions: [
+      { text: "I'm " + next.name + " — start my turn", primary: true, action: () => {
+        closeModal();
+        announce("It's " + next.name + "'s turn.");
+      }}
+    ]
+  });
+}
+
+// ============================================================
+// AI
+// ============================================================
+
+function aiTakeTurn() {
+  const p = currentPlayer();
+  if (!p.isAI || state.gameOver) return;
+  // Once per turn: consider proposing a trade before rolling.
+  if (!p._consideredTradeThisTurn) {
+    p._consideredTradeThisTurn = true;
+    if (aiConsiderTrade(p)) return; // Trade in flight; resumes via resumeAfterAITrade()
+  }
+  if (p.inJail) {
+    // Strategy: if can afford and not many turns left, pay; otherwise roll
+    if (p.getOutCards > 0) {
+      useGetOutCard();
+      aiNext(aiTakeTurn);
+      return;
+    }
+    if (p.jailTurns < 2 && p.money > 300) {
+      // Try rolling first if we have cash buffer
+      rollForJail();
+      return;
+    }
+    if (p.money >= PITY_CORNER_FINE) {
+      payToLeave();
+      aiNext(aiTakeTurn);
+      return;
+    }
+    rollForJail();
+    return;
+  }
+  doDiceRoll();
+}
+
+function aiContinue() {
+  const p = currentPlayer();
+  if (!p.isAI || state.gameOver) return;
+  if (state.doubleCount > 0 && !p.inJail && state.turnPhase === 'action') {
+    aiNext(doDiceRoll);
+    return;
+  }
+  // Maybe build houses
+  aiTryBuildHouses(p);
+  aiNext(endTurn);
+}
+
+function aiTryBuildHouses(p) {
+  const reserve = 400;
+  if (p.money < reserve + 100) return;
+  for (const group in GROUPS) {
+    const positions = GROUPS[group];
+    if (!positions.every(pos => p.properties.includes(pos) && !p.mortgaged.includes(pos))) continue;
+    let housesBuilt = 0;
+    let hotelsBuilt = 0;
+    while (p.money > reserve) {
+      const counts = positions.map(pos => (p.hotels[pos] ? 5 : (p.houses[pos] || 0)));
+      const minCount = Math.min(...counts);
+      if (minCount >= 5) break;
+      const targetIdx = counts.indexOf(minCount);
+      const target = positions[targetIdx];
+      const space = BOARD[target];
+      if (p.money < space.houseCost + reserve) break;
+      p.money -= space.houseCost;
+      if (minCount === 4) {
+        p.hotels[target] = 1;
+        p.houses[target] = 0;
+        hotelsBuilt++;
+      } else {
+        p.houses[target] = minCount + 1;
+        housesBuilt++;
+      }
+    }
+    if (housesBuilt || hotelsBuilt) {
+      const parts = [];
+      if (housesBuilt) parts.push(housesBuilt + ' house' + (housesBuilt === 1 ? '' : 's'));
+      if (hotelsBuilt) parts.push(hotelsBuilt + ' hotel' + (hotelsBuilt === 1 ? '' : 's'));
+      announce(p.name + ' built ' + parts.join(' and ') + ' on the ' + group.replace('-', ' ') + ' set.');
+      sfxBuy();
+    }
+  }
+}
+
+function aiDecideBuy(p, space) {
+  // Buy if can afford with comfortable reserve
+  const reserve = 200;
+  if (p.money >= space.price + reserve) {
+    buyProperty(p, space);
+  } else {
+    declineProperty(p, space);
+  }
+}
+
+// For CHOICE cards: pick whichever option costs the AI least (or pays most).
+function aiPickChoice(p, options) {
+  let best = options[0];
+  let bestCost = estimateEffectCost(p, options[0].effect);
+  for (let i = 1; i < options.length; i++) {
+    const c = estimateEffectCost(p, options[i].effect);
+    if (c < bestCost) { best = options[i]; bestCost = c; }
+  }
+  return best;
+}
+
+function estimateEffectCost(p, effect) {
+  if (!effect) return 0;
+  switch (effect.type) {
+    case 'PAY': return effect.amount || 0;
+    case 'COLLECT': return -(effect.amount || 0);
+    case 'PAY_EACH': return (effect.amount || 0) * (state.players.filter(x => !x.bankrupt).length - 1);
+    case 'COLLECT_EACH': return -(effect.amount || 0) * (state.players.filter(x => !x.bankrupt).length - 1);
+    case 'COLLECT_NEXT': return -(effect.amount || 0);
+    case 'GO_TO_JAIL': return 100; // arbitrary nuisance value
+    case 'GET_OUT': return -50;    // a small asset
+    case 'GOTO': {
+      const pos = effect.pos;
+      const space = BOARD[pos];
+      const owner = findOwner(pos);
+      // Subtract salary if we'll pass GO going there
+      let cost = 0;
+      if (pos < p.position) cost -= GO_SALARY;
+      if (pos === 0) cost -= GO_SALARY;
+      // Add estimated rent if owned by someone else
+      if (owner && owner.id !== p.id && !owner.mortgaged.includes(pos)) {
+        if (space.type === 'property' && space.rent) cost += space.rent[0];
+        else if (space.type === 'station') cost += 25;
+        else if (space.type === 'utility') cost += 28; // ~7 * 4
+      }
+      return cost;
+    }
+    case 'BACK_3':       return 0;
+    case 'NEXT_GO_BONUS': return -(GO_SALARY * ((effect.multiplier || 2) - 1));
+    case 'REPAIRS': {
+      let total = 0;
+      for (const pos of p.properties) {
+        total += (p.houses[pos] || 0) * (effect.perHouse || 0);
+        if (p.hotels[pos]) total += effect.perHotel || 0;
+      }
+      return total;
+    }
+    default: return 0;
+  }
+}
+
+// ============================================================
+// MODAL
+// ============================================================
+
+function openModal({ title, body, actions }) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = body;
+  const a = document.getElementById('modal-actions');
+  a.innerHTML = '';
+  for (const act of actions || []) {
+    const b = document.createElement('button');
+    b.className = 'btn' + (act.primary ? ' btn-primary' : '');
+    b.textContent = act.text;
+    if (act.disabled) b.disabled = true;
+    b.onclick = act.action;
+    a.appendChild(b);
+  }
+  document.getElementById('modal-backdrop').classList.remove('hidden');
+  document.querySelectorAll('.screen').forEach(s => s.setAttribute('inert', ''));
+  setTimeout(() => {
+    const firstBtn = a.querySelector('button:not([disabled])');
+    if (firstBtn) firstBtn.focus();
+  }, 50);
+}
+
+function closeModal() {
+  document.getElementById('modal-backdrop').classList.add('hidden');
+  document.querySelectorAll('.screen').forEach(s => s.removeAttribute('inert'));
+}
+
+// ============================================================
+// PORTFOLIO / BOARD / PLAYERS / SETTINGS MODALS
+// ============================================================
+
+function openPortfolio() {
+  const p = currentPlayer();
+  if (p.isAI) {
+    openModal({
+      title: p.name + "'s Portfolio (AI)",
+      body: portfolioHtml(p, false),
+      actions: [{ text: 'Close', action: closeModal }]
+    });
+    return;
+  }
+  openModal({
+    title: 'Your Portfolio',
+    body: portfolioHtml(p, true),
+    actions: [{ text: 'Close', action: closeModal }]
+  });
+}
+
+function portfolioHtml(p, interactive) {
+  if (p.properties.length === 0) return '<div class="empty">No properties yet.</div>';
+  // Group by color
+  const byGroup = {};
+  for (const pos of p.properties) {
+    const space = BOARD[pos];
+    const g = space.group || space.type;
+    if (!byGroup[g]) byGroup[g] = [];
+    byGroup[g].push(pos);
+  }
+  let html = '<div class="props-list">';
+  for (const g in byGroup) {
+    html += `<h3 style="margin-top:14px;text-transform:capitalize;">${g.replace('-', ' ')}</h3>`;
+    for (const pos of byGroup[g]) {
+      const space = BOARD[pos];
+      const mortgaged = p.mortgaged.includes(pos);
+      const houses = p.houses[pos] || 0;
+      const hotel = !!p.hotels[pos];
+      const ownsFullGroup = space.group && playerOwnsFullGroup(p, space.group);
+      html += `<div class="prop-row">
+        <div class="top">
+          <div><span class="name">${escapeHtml(space.name)}</span>
+            ${mortgaged ? '<span class="mortgaged"> (Mortgaged)</span>' : ''}
+            ${(houses || hotel) ? ' ' + buildingsBadge(houses, hotel) : ''}
+          </div>
+          ${INFO[space.name] ? `<button class="btn btn-xs" onclick="openPortfolioAbout(${pos})">About</button>` : ''}
+        </div>`;
+      if (interactive) {
+        html += '<div class="actions">';
+        if (!mortgaged && houses === 0 && !hotel) {
+          html += `<button class="btn" onclick="actMortgage(${pos})">Mortgage (+${fmtMoney(space.mortgage)})</button>`;
+        }
+        if (mortgaged) {
+          const cost = Math.ceil(space.mortgage * 1.1);
+          html += `<button class="btn" onclick="actUnmortgage(${pos})" ${p.money >= cost ? '' : 'disabled'}>Unmortgage (−${fmtMoney(cost)})</button>`;
+        }
+        if (space.type === 'property' && ownsFullGroup && !mortgaged && !hotel) {
+          if (p.money >= space.houseCost && houses < 4) {
+            html += `<button class="btn" onclick="actBuildHouse(${pos})">Build house (−${fmtMoney(space.houseCost)})</button>`;
+          }
+          if (houses === 4 && p.money >= space.houseCost) {
+            html += `<button class="btn" onclick="actBuildHotel(${pos})">Build hotel (−${fmtMoney(space.houseCost)})</button>`;
+          }
+        }
+        if (houses > 0 || hotel) {
+          html += `<button class="btn" onclick="actSellBuilding(${pos})">Sell ${hotel ? 'hotel' : 'house'} (+${fmtMoney(Math.floor(space.houseCost / 2))})</button>`;
+        }
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+  }
+  html += '</div>';
+  html += `<p style="margin-top:14px;"><strong>Cash:</strong> ${fmtMoney(p.money)}${p.getOutCards > 0 ? ' · <strong>Get Out cards:</strong> ' + p.getOutCards : ''}</p>`;
+  return html;
+}
+
+function actMortgage(pos) {
+  const p = currentPlayer();
+  const space = BOARD[pos];
+  if (p.mortgaged.includes(pos)) return;
+  if ((p.houses[pos] || 0) > 0 || p.hotels[pos]) return;
+  p.money += space.mortgage;
+  p.mortgaged.push(pos);
+  sfxMoneyIn();
+  announce(p.name + ' mortgaged ' + space.name + '.');
+  saveGame();
+  openPortfolio();
+}
+
+function actUnmortgage(pos) {
+  const p = currentPlayer();
+  const space = BOARD[pos];
+  const cost = Math.ceil(space.mortgage * 1.1);
+  if (p.money < cost) return;
+  p.money -= cost;
+  p.mortgaged = p.mortgaged.filter(x => x !== pos);
+  sfxMoneyOut();
+  announce(p.name + ' unmortgaged ' + space.name + '.');
+  saveGame();
+  openPortfolio();
+}
+
+function actBuildHouse(pos) {
+  const p = currentPlayer();
+  const space = BOARD[pos];
+  if (!playerOwnsFullGroup(p, space.group)) return;
+  if (p.mortgaged.includes(pos)) return;
+  const houses = p.houses[pos] || 0;
+  if (houses >= 4) return;
+  // Even build rule: cannot build if another in group has fewer
+  const groupCounts = GROUPS[space.group].map(gpos => p.hotels[gpos] ? 5 : (p.houses[gpos] || 0));
+  const minCount = Math.min(...groupCounts);
+  if (houses > minCount) {
+    announce('Even build rule: must build evenly across the set first.');
+    openPortfolio();
+    return;
+  }
+  if (p.money < space.houseCost) return;
+  p.money -= space.houseCost;
+  p.houses[pos] = houses + 1;
+  sfxBuy();
+  announce(p.name + ' built a house on ' + space.name + '.');
+  saveGame();
+  openPortfolio();
+}
+
+function actBuildHotel(pos) {
+  const p = currentPlayer();
+  const space = BOARD[pos];
+  if ((p.houses[pos] || 0) !== 4) return;
+  if (p.money < space.houseCost) return;
+  p.money -= space.houseCost;
+  p.houses[pos] = 0;
+  p.hotels[pos] = 1;
+  sfxBuy();
+  announce(p.name + ' built a hotel on ' + space.name + '.');
+  saveGame();
+  openPortfolio();
+}
+
+function actSellBuilding(pos) {
+  const p = currentPlayer();
+  const space = BOARD[pos];
+  const refund = Math.floor(space.houseCost / 2);
+  if (p.hotels[pos]) {
+    p.hotels[pos] = 0;
+    delete p.hotels[pos];
+    p.houses[pos] = 4;
+    announce(p.name + ' sold the hotel on ' + space.name + ' (got 4 houses back).');
+  } else if (p.houses[pos] > 0) {
+    p.houses[pos]--;
+    announce(p.name + ' sold a house on ' + space.name + '.');
+  } else return;
+  p.money += refund;
+  sfxMoneyIn();
+  saveGame();
+  openPortfolio();
+}
+
+function openBoard() {
+  openModal({
+    title: 'The Board',
+    body: boardHtml(),
+    actions: [{ text: 'Close', action: closeModal }]
+  });
+}
+
+function boardHtml() {
+  let html = '<div class="board-list">';
+  for (const space of BOARD) {
+    const owner = isPropertySpace(space.pos) ? findOwner(space.pos) : null;
+    const isCurrent = space.pos === currentPlayer().position;
+    const bClass = getBoardRowClass(space);
+    html += `<div class="board-row${isCurrent ? ' current' : ''} ${bClass}">
+      <div><span class="pos">${space.pos.toString().padStart(2, '0')}</span>${escapeHtml(space.name)}</div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        ${owner ? `<span class="owner-tag">${escapeHtml(owner.name)}</span>` : ''}
+        ${INFO[space.name] ? `<button class="btn btn-xs" onclick="openBoardAbout(${space.pos})">About</button>` : ''}
+      </div>
+    </div>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+function openBoardAbout(pos) {
+  showInfoModal(BOARD[pos], openBoard);
+}
+
+function openPortfolioAbout(pos) {
+  showInfoModal(BOARD[pos], openPortfolio);
+}
+
+function getBoardRowClass(space) {
+  if (space.type === 'property') return 'br-' + space.group;
+  if (space.type === 'station') return 'br-station';
+  if (space.type === 'utility') return 'br-utility';
+  if (space.type === 'chance') return 'br-chance';
+  if (space.type === 'chest') return 'br-chest';
+  if (space.type === 'corner') return 'br-corner';
+  if (space.type === 'tax') return 'br-tax';
+  return 'br-corner';
+}
+
+function openPlayers() {
+  let html = '<div class="props-list">';
+  for (const p of state.players) {
+    html += `<div class="prop-row">
+      <div class="top">
+        <div><span class="player-pip piece-pip pip-${p.id}" aria-label="${escapeHtml(pieceFor(p).label)}">${pieceFor(p).emoji}</span><strong>${escapeHtml(p.name)}</strong>${p.isAI ? ' <span class="ai-tag">AI</span>' : ''}${p.bankrupt ? ' (bankrupt)' : ''}</div>
+        <div style="font-family:'Courier Prime',monospace;font-weight:700;color:var(--accent);">${fmtMoney(p.money)}</div>
+      </div>
+      <div class="muted" style="margin-top:4px;">Position: ${escapeHtml(BOARD[p.position].name)}${p.inJail ? ' (in The Pity Corner)' : ''} · ${p.properties.length} ${p.properties.length === 1 ? 'property' : 'properties'}</div>
+    </div>`;
+  }
+  html += '</div>';
+  if (state.houseRules.freeParkingJackpot) {
+    html += `<p style="margin-top:14px;"><strong>The Busy Spot pot:</strong> ${fmtMoney(state.freeParkingPot)}</p>`;
+  }
+  openModal({
+    title: 'Players',
+    body: html,
+    actions: [{ text: 'Close', action: closeModal }]
+  });
+}
+
+function showHowToPlay(onBack) {
+  const body = `
+    <h3>The Object</h3>
+    <p>Be the last solvent player. When everyone else is bankrupt, you win.</p>
+
+    <h3>Your Turn</h3>
+    <p>On your turn you:</p>
+    <ol>
+      <li>Roll the dice and move that many spaces.</li>
+      <li>Resolve the space you land on — buy, pay rent, draw a card, or whatever it says.</li>
+      <li>Build, mortgage, or propose a trade while it's still your turn.</li>
+      <li>End the turn when you're done.</li>
+    </ol>
+    <p>Roll doubles and you go again. Three doubles in a row sends you straight to The Pity Corner.</p>
+
+    <h3>Pass GO, Collect Your Allowance</h3>
+    <p>Each lap around the board earns you €254 — the weekly Disability Allowance. Don't spend it all at once.</p>
+
+    <h3>Buying Property</h3>
+    <p>Land on an unowned property and you can buy it at the listed price, or decline. If Auctions are on (House Rule), declining sends it to auction — everyone, including you, can bid.</p>
+
+    <h3>Rent and Monopolies</h3>
+    <p>Land on someone else's property and you pay them rent. Own every property in a colour group and rent doubles on each unbuilt site. You can then build houses, and eventually a hotel, each one raising the rent.</p>
+
+    <h3>The Pity Corner</h3>
+    <p>The jail of this game. You go there if you land on "Go to The Pity Corner", draw a card sending you there, or roll doubles three times in a row.</p>
+    <p>To get out, roll doubles (you get three tries), pay the €50 fine, or use a Get Out of The Pity Corner Free card.</p>
+
+    <h3>Cards</h3>
+    <p>Two decks: Chance and Community Chest. Land on those spaces to draw one. Some cost money, some pay, some send you places. Each card is themed around the disability sector and Irish life.</p>
+
+    <h3>The Blind Tax</h3>
+    <p>Two tax spaces. Pay €100 (Blind Tax) or €200 (Premium Blind Tax) to the bank. If Free Parking jackpot is on, the tax goes into the pot for the next person who lands on The Busy Spot.</p>
+
+    <h3>Trading</h3>
+    <p>At any point on your turn, tap "Propose Trade" to offer properties, cash, or Get Out cards to another player. They can accept, counter, or reject. AI players will trade with you too — and may propose trades on their own turns.</p>
+
+    <h3>When You Can't Pay</h3>
+    <p>If a rent or tax bill is bigger than your cash, the rescue flow opens. You can sell houses or hotels (at half their build cost), mortgage properties (for half the price), or declare bankruptcy. Turn on Auto-rescue in House Rules if you'd rather have the game handle it.</p>
+
+    <h3>Accessibility</h3>
+    <p>The whole game works with VoiceOver. Every ownable space has an "About" button explaining the real-world Irish organisation it represents. Announcements queue with proper timing so multi-step events don't pile up. Sound effects can be toggled at any time.</p>
+
+    <h3>Winning</h3>
+    <p>When every other player has gone bankrupt, the game is yours. Good luck.</p>
+  `;
+  openModal({
+    title: 'How to Play',
+    body: body,
+    actions: [
+      { text: onBack ? 'Back to menu' : 'Close', action: onBack || closeModal }
+    ]
+  });
+}
+
+function openSettings() {
+  const hr = state.houseRules;
+  openModal({
+    title: 'Menu',
+    body: `
+      <h3>House Rules</h3>
+      <ul class="house-rules-list">
+        <li>Free Parking jackpot: ${hr.freeParkingJackpot ? 'on' : 'off'}</li>
+        <li>Double allowance on GO landing: ${hr.doubleOnGo ? 'on' : 'off'}</li>
+        <li>Snake eyes bonus: ${hr.snakeEyesBonus ? 'on' : 'off'}</li>
+      </ul>
+      <p class="muted">House rules are set at game start. Start a new game to change them.</p>
+      <div class="checkbox-row">
+        <input type="checkbox" id="hr-sound-live" ${hr.sound ? 'checked' : ''} onchange="toggleSound(this.checked)">
+        <label for="hr-sound-live">Sound effects</label>
+      </div>
+    `,
+    actions: [
+      { text: 'How to Play', action: () => { closeModal(); showHowToPlay(openSettings); } },
+      { text: 'New Game', action: () => {
+        closeModal();
+        openModal({
+          title: 'Abandon current game?',
+          body: '<p>Your progress will be lost. Start a brand new game?</p>',
+          actions: [
+            { text: 'Yes, abandon and restart', primary: true, action: () => {
+              clearSave();
+              state = null;
+              closeModal();
+              showScreen('setup-screen');
+              renderSetup();
+              checkResume();
+            }},
+            { text: 'Cancel', action: closeModal }
+          ]
+        });
+      } },
+      { text: 'Close', action: closeModal }
+    ]
+  });
+}
+
+function toggleSound(on) {
+  state.houseRules.sound = on;
+  saveGame();
+}
+
+function endGameToSetup() {
+  clearSave();
+  state = null;
+  showScreen('setup-screen');
+  renderSetup();
+  checkResume();
+}
+
+// ============================================================
+// INIT
+// ============================================================
+
+function checkResume() {
+  document.getElementById('resume-card').hidden = !hasSave();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderSetup();
+  checkResume();
+  document.getElementById('num-players').addEventListener('change', renderSetup);
+  document.getElementById('start-game-btn').addEventListener('click', startGame);
+  document.getElementById('how-to-play-btn').addEventListener('click', () => showHowToPlay(null));
+  document.getElementById('resume-btn').addEventListener('click', resumeGame);
+  document.getElementById('discard-save-btn').addEventListener('click', () => {
+    openModal({
+      title: 'Start a new game?',
+      body: '<p>This will discard your saved game in progress. Continue?</p>',
+      actions: [
+        { text: 'Yes, start new game', primary: true, action: () => {
+          clearSave();
+          checkResume();
+          closeModal();
+          startGame();
+        }},
+        { text: 'Cancel', action: closeModal }
+      ]
+    });
+  });
+  document.getElementById('menu-portfolio').addEventListener('click', openPortfolio);
+  document.getElementById('menu-board').addEventListener('click', openBoard);
+  document.getElementById('menu-players').addEventListener('click', openPlayers);
+  document.getElementById('menu-settings').addEventListener('click', openSettings);
+  // Tap anywhere to wake audio on iOS
+  document.body.addEventListener('touchstart', () => audio(), { once: true, passive: true });
+  document.body.addEventListener('click', () => audio(), { once: true });
+});
+
+// Expose for inline onclicks
+window.actMortgage = actMortgage;
+window.actUnmortgage = actUnmortgage;
+window.actBuildHouse = actBuildHouse;
+window.actBuildHotel = actBuildHotel;
+window.actSellBuilding = actSellBuilding;
+window.rollDice = rollDice;
+window.endTurn = endTurn;
+window.rollForJail = rollForJail;
+window.payToLeave = payToLeave;
+window.useGetOutCard = useGetOutCard;
+window.toggleSound = toggleSound;
+window.endGameToSetup = endGameToSetup;
+
+</script>
+</body>
+</html>
