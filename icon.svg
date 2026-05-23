@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Felt background. Full-bleed so maskable crops stay on-theme. -->
+  <rect width="512" height="512" fill="#15110b"/>
+  <!-- Inner safe-zone border (within the ~80% maskable safe area). -->
+  <rect x="72" y="72" width="368" height="368" fill="none" stroke="#c9a850" stroke-width="6" opacity="0.55"/>
+  <!-- Brand monogram. -->
+  <text x="256" y="350" text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="300" font-weight="bold" fill="#e8d6a8">D</text>
+</svg>
