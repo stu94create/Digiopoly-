@@ -732,6 +732,14 @@ button {
     </div>
     <div id="player-fields"></div>
     <div class="field">
+      <label for="ai-difficulty">AI difficulty</label>
+      <select id="ai-difficulty">
+        <option value="easy">Easy — gentle opponents, generous trades</option>
+        <option value="normal" selected>Normal — balanced</option>
+        <option value="hard">Hard — aggressive bidders, mortgages to build, drives a hard bargain</option>
+      </select>
+    </div>
+    <div class="field">
       <label for="game-mode-hint" id="game-mode-hint">Tip: tick "AI" beside any player to have the computer play them.</label>
     </div>
     <button class="btn btn-primary" id="start-game-btn">Start Game</button>
@@ -1003,6 +1011,50 @@ const PIECES = [
   { key: 'bunny',      emoji: '🐰', label: 'The bunny' },
   { key: 'queen',      emoji: '👑', label: 'Disney queen' },
 ];
+
+// AI difficulty tiers. Each tier is a knob bundle the AI code reads via
+// `aiCfg()` so we don't sprinkle if/else over every decision site. Keys:
+//   buyReserve   — cash kept after buying landed property
+//   buildReserve — cash kept after building houses/hotels
+//   auctionCashCap — max share of current cash to spend in an auction
+//   auctionCompletionPremium — price multiplier when this auction would
+//     complete a colour/station/utility set
+//   auctionBasePremium — price multiplier otherwise
+//   tradeRequiredGain — minimum receive/give ratio to accept an offer
+//   tradeOfferPremium — multiplier on face price when offering for a
+//     property that would complete an AI monopoly
+//   swapCashShare — max share of cash thrown in on a property swap
+//   mortgageToBuild — mortgage spare properties to fund house-building?
+//   payJailAfter — jail turns served before auto-paying out
+//   jailStayWhenDangerous — refuse to leave jail when board is bristling
+//     with hotels (waiting it out is correct play late game)
+const AI_DIFFICULTY = {
+  easy: {
+    label: 'Easy',
+    buyReserve: 300, buildReserve: 500,
+    auctionCashCap: 0.4, auctionCompletionPremium: 1.1, auctionBasePremium: 0.8,
+    tradeRequiredGain: 1.05, tradeOfferPremium: 1.15, swapCashShare: 0.25,
+    mortgageToBuild: false, payJailAfter: 1, jailStayWhenDangerous: false,
+  },
+  normal: {
+    label: 'Normal',
+    buyReserve: 200, buildReserve: 300,
+    auctionCashCap: 0.55, auctionCompletionPremium: 1.4, auctionBasePremium: 0.9,
+    tradeRequiredGain: 1.15, tradeOfferPremium: 1.4, swapCashShare: 0.4,
+    mortgageToBuild: false, payJailAfter: 2, jailStayWhenDangerous: true,
+  },
+  hard: {
+    label: 'Hard',
+    buyReserve: 100, buildReserve: 150,
+    auctionCashCap: 0.75, auctionCompletionPremium: 1.9, auctionBasePremium: 1.0,
+    tradeRequiredGain: 1.3, tradeOfferPremium: 1.9, swapCashShare: 0.6,
+    mortgageToBuild: true, payJailAfter: 3, jailStayWhenDangerous: true,
+  },
+};
+function aiCfg() {
+  return AI_DIFFICULTY[state && state.houseRules && state.houseRules.aiDifficulty] || AI_DIFFICULTY.normal;
+}
+
 function pieceFor(player) {
   return PIECES.find(p => p.key === player.piece) || PIECES[((player.id || 1) - 1) % PIECES.length];
 }
@@ -1036,7 +1088,7 @@ function defaultState() {
     chanceIdx: 0,
     chestIdx: 0,
     freeParkingPot: 0,
-    houseRules: { freeParkingJackpot: false, doubleOnGo: false, snakeEyesBonus: false, sound: true, autoRescue: false, auctions: true },
+    houseRules: { freeParkingJackpot: false, doubleOnGo: false, snakeEyesBonus: false, sound: true, autoRescue: false, auctions: true, aiDifficulty: 'normal' },
     log: [],
     gameOver: false,
     winner: null,
@@ -1346,6 +1398,8 @@ function startGame() {
   state.houseRules.sound = document.getElementById('hr-sound').checked;
   state.houseRules.autoRescue = document.getElementById('hr-auto-rescue').checked;
   state.houseRules.auctions = document.getElementById('hr-auctions').checked;
+  const diffEl = document.getElementById('ai-difficulty');
+  state.houseRules.aiDifficulty = (diffEl && AI_DIFFICULTY[diffEl.value]) ? diffEl.value : 'normal';
   for (let i = 0; i < num; i++) {
     const name = (document.getElementById('pname-' + i).value || ('Player ' + (i + 1))).trim();
     const isAI = document.getElementById('pai-' + i).checked;
@@ -2413,24 +2467,40 @@ function aiHandleTradeOffer(offer) {
 }
 
 function aiEvaluateTradeOffer(ai, offer) {
+  const cfg = aiCfg();
   // AI receives `fromProposer` and gives `fromRecipient`.
-  const valueOf = (side) => {
+  const valueOf = (side, viewer, isGiving) => {
     let v = side.money;
     for (const pos of side.props) {
       const sp = BOARD[pos];
       let pv = sp.price || 0;
       // Mortgaged properties worth less
       if (state.players.some(pl => pl.mortgaged.includes(pos))) pv = Math.floor(pv / 2);
+      // Strategic premium: a property that would complete the viewer's set
+      // is worth far more than face price (when receiving), and a property
+      // the viewer is giving up that would complete the OPPONENT's set
+      // costs them a future monopoly (when giving).
+      if (sp.type === 'property' && GROUPS[sp.group]) {
+        const proposer = state.players.find(pl => pl.id === offer.proposerId);
+        const counterparty = isGiving ? proposer : viewer;
+        const setOwners = GROUPS[sp.group].filter(g => counterparty.properties.includes(g)).length;
+        if (!isGiving && setOwners === GROUPS[sp.group].length - 1) {
+          pv = Math.floor(pv * 2); // would complete OUR monopoly
+        }
+        if (isGiving && setOwners === GROUPS[sp.group].length - 1) {
+          pv = Math.floor(pv * 1.8); // would complete THEIR monopoly — charge for it
+        }
+      }
       v += pv;
     }
     v += side.jailCards * 50;
     return v;
   };
-  const receiveValue = valueOf(offer.fromProposer);
-  const giveValue = valueOf(offer.fromRecipient);
-  // Require 10% net gain to accept; never give up more cash than the AI can spare.
+  const receiveValue = valueOf(offer.fromProposer, ai, false);
+  const giveValue = valueOf(offer.fromRecipient, ai, true);
+  // Never give up more cash than the AI can spare.
   if (offer.fromRecipient.money > ai.money * 0.5) return { accept: false, receiveValue, giveValue };
-  return { accept: receiveValue >= giveValue * 1.1, receiveValue, giveValue };
+  return { accept: receiveValue >= giveValue * cfg.tradeRequiredGain, receiveValue, giveValue };
 }
 
 // Look for a colour group where AI is one short of monopoly, and the
@@ -2448,8 +2518,9 @@ function findAITradeOpportunity(ai) {
     if (!canTradeProperty(missing)) continue; // buildings on group lock it
     if (owner.mortgaged.includes(missing)) continue; // skip mortgaged target — too messy
 
+    const cfg = aiCfg();
     const missingSpace = BOARD[missing];
-    const targetValue = Math.floor(missingSpace.price * 1.3); // willing to pay 30% premium
+    const targetValue = Math.floor(missingSpace.price * cfg.tradeOfferPremium);
 
     // Option A — straight cash buy if the AI has plenty
     if (ai.money >= targetValue + 400) {
@@ -2478,7 +2549,7 @@ function findAITradeOpportunity(ai) {
       const give = surplus[0];
       const giveValue = BOARD[give].price || 0;
       const cashNeeded = Math.max(0, targetValue - giveValue);
-      const cash = Math.min(cashNeeded, Math.floor(ai.money * 0.4));
+      const cash = Math.min(cashNeeded, Math.floor(ai.money * cfg.swapCashShare));
       const offer = {
         proposerId: ai.id,
         recipientId: owner.id,
@@ -2740,9 +2811,10 @@ function aiAuctionTurn(ai) {
     }
     return false;
   })();
-  let maxPay = Math.floor(space.price * (wouldComplete ? 1.4 : 0.9));
-  // Cap at half the AI's cash so it doesn't ruin itself
-  maxPay = Math.min(maxPay, Math.floor(ai.money * 0.5));
+  const cfg = aiCfg();
+  let maxPay = Math.floor(space.price * (wouldComplete ? cfg.auctionCompletionPremium : cfg.auctionBasePremium));
+  // Cap at a fraction of the AI's cash so it doesn't ruin itself
+  maxPay = Math.min(maxPay, Math.floor(ai.money * cfg.auctionCashCap));
   // Small jitter
   maxPay += Math.floor((Math.random() - 0.5) * 30);
   // Hard cap at the AI's actual cash — otherwise placeBid will reject the
@@ -3216,14 +3288,21 @@ function aiTakeTurn() {
     if (aiConsiderTrade(p)) return; // Trade in flight; resumes via resumeAfterAITrade()
   }
   if (p.inJail) {
-    // Strategy: if can afford and not many turns left, pay; otherwise roll
-    if (p.getOutCards > 0) {
+    const cfg = aiCfg();
+    // Use a free card only if it's actively useful — otherwise hoard it.
+    // (When the board is dangerous and the AI plans to wait, the card is
+    // wasted on a turn the AI wouldn't have left anyway.)
+    if (p.getOutCards > 0 && !(cfg.jailStayWhenDangerous && aiBoardIsDangerous(p))) {
       useGetOutCard();
       aiNext(aiTakeTurn);
       return;
     }
-    if (p.jailTurns < 2 && p.money > 300) {
-      // Try rolling first if we have cash buffer
+    // Late game with hotels on the board: just sit and avoid the rents.
+    if (cfg.jailStayWhenDangerous && aiBoardIsDangerous(p) && p.jailTurns < 3) {
+      rollForJail();
+      return;
+    }
+    if (p.jailTurns < cfg.payJailAfter && p.money > 300) {
       rollForJail();
       return;
     }
@@ -3236,6 +3315,19 @@ function aiTakeTurn() {
     return;
   }
   doDiceRoll();
+}
+
+// "Dangerous" = at least one opponent has a hotel (or 4 houses) on a
+// property the jailed AI could land on after leaving. Cheap proxy: any
+// hotel anywhere is enough to make sitting in jail attractive.
+function aiBoardIsDangerous(p) {
+  for (const pl of state.players) {
+    if (pl.id === p.id || pl.bankrupt) continue;
+    for (const pos of pl.properties) {
+      if (pl.hotels[pos] || (pl.houses[pos] || 0) >= 4) return true;
+    }
+  }
+  return false;
 }
 
 function aiContinue() {
@@ -3252,9 +3344,22 @@ function aiContinue() {
 }
 
 function aiTryBuildHouses(p) {
-  const reserve = 400;
+  const cfg = aiCfg();
+  // Hard-tier AI will mortgage spare properties (no near-monopoly value)
+  // to fund building on a real monopoly.
+  if (cfg.mortgageToBuild && p.money < cfg.buildReserve + 200) {
+    aiMortgageSparesToFund(p, cfg.buildReserve + 400);
+  }
+  const reserve = cfg.buildReserve;
   if (p.money < reserve + 100) return;
-  for (const group in GROUPS) {
+  // Prefer high-value sets first (orange/red/light-blue/dark-blue) — they
+  // generate the most rent per euro spent.
+  const orderedGroups = Object.keys(GROUPS).sort((a, b) => {
+    const ah = aiHighValueSet({ type: 'property', group: a }) ? 0 : 1;
+    const bh = aiHighValueSet({ type: 'property', group: b }) ? 0 : 1;
+    return ah - bh;
+  });
+  for (const group of orderedGroups) {
     const positions = GROUPS[group];
     if (!positions.every(pos => p.properties.includes(pos) && !p.mortgaged.includes(pos))) continue;
     let housesBuilt = 0;
@@ -3287,14 +3392,63 @@ function aiTryBuildHouses(p) {
   }
 }
 
+// Mortgage properties that aren't part of (or near to) a colour monopoly,
+// cheapest first, until the AI has at least `targetCash` on hand.
+function aiMortgageSparesToFund(p, targetCash) {
+  if (p.money >= targetCash) return;
+  const spares = p.properties.filter(pos => {
+    if (p.mortgaged.includes(pos)) return false;
+    if ((p.houses[pos] || 0) > 0 || p.hotels[pos]) return false;
+    const sp = BOARD[pos];
+    if (sp.type !== 'property') return true; // stations/utilities are fair game
+    const groupPositions = GROUPS[sp.group] || [];
+    const owned = groupPositions.filter(g => p.properties.includes(g)).length;
+    return owned < groupPositions.length; // skip pieces that are part of a full monopoly
+  }).sort((a, b) => (BOARD[a].price || 0) - (BOARD[b].price || 0));
+  for (const pos of spares) {
+    if (p.money >= targetCash) break;
+    const sp = BOARD[pos];
+    p.money += sp.mortgage;
+    p.mortgaged.push(pos);
+    announce(p.name + ' mortgaged ' + sp.name + ' to fund building.');
+  }
+}
+
 function aiDecideBuy(p, space) {
-  // Buy if can afford with comfortable reserve
-  const reserve = 200;
+  const cfg = aiCfg();
+  // Hard-tier AI is willing to dip into the reserve for high-value sets
+  // (orange/red/dark-blue) or to complete a colour/station/utility set.
+  const wouldComplete = aiSpaceWouldComplete(p, space);
+  const isPriority = aiHighValueSet(space);
+  let reserve = cfg.buyReserve;
+  if (cfg.mortgageToBuild && (wouldComplete || isPriority)) reserve = Math.floor(reserve / 2);
   if (p.money >= space.price + reserve) {
     buyProperty(p, space);
   } else {
     declineProperty(p, space);
   }
+}
+
+// True if owning `space` would complete a colour/station/utility set for `p`.
+function aiSpaceWouldComplete(p, space) {
+  if (space.type === 'property' && GROUPS[space.group]) {
+    const owned = GROUPS[space.group].filter(pos => p.properties.includes(pos)).length;
+    return owned === GROUPS[space.group].length - 1;
+  }
+  if (space.type === 'station') {
+    return STATIONS.filter(s => p.properties.includes(s)).length === STATIONS.length - 1;
+  }
+  if (space.type === 'utility') {
+    return UTILITIES.filter(u => p.properties.includes(u)).length === UTILITIES.length - 1;
+  }
+  return false;
+}
+
+// Orange/red/light-blue are the highest-ROI sets in classic Monopoly;
+// dark-blue is rent-heavy. The AI prioritises these when reserving cash.
+function aiHighValueSet(space) {
+  if (space.type !== 'property') return false;
+  return ['orange', 'red', 'light-blue', 'dark-blue'].includes(space.group);
 }
 
 // For CHOICE cards: pick whichever option costs the AI least (or pays most).
@@ -3680,6 +3834,7 @@ function openSettings() {
     body: `
       <h3>House Rules</h3>
       <ul class="house-rules-list">
+        <li>AI difficulty: ${(AI_DIFFICULTY[hr.aiDifficulty] || AI_DIFFICULTY.normal).label}</li>
         <li>Free Parking jackpot: ${hr.freeParkingJackpot ? 'on' : 'off'}</li>
         <li>Double allowance on GO landing: ${hr.doubleOnGo ? 'on' : 'off'}</li>
         <li>Snake eyes bonus: ${hr.snakeEyesBonus ? 'on' : 'off'}</li>
