@@ -7,6 +7,16 @@
 <!-- Keep this page out of search engines (works per-page on a project site) -->
 <meta name="robots" content="noindex, nofollow">
 <meta name="googlebot" content="noindex, nofollow">
+<script>
+  // Passcode gate: if this device already unlocked, mark it before first paint
+  // so returning visitors never see the gate flash.
+  try {
+    if (localStorage.getItem("telly-gate-unlocked") ===
+        "43f38c373629bb186bdbe38ed3e642767ae4c9284e3fb30f98a4fd8446ad488e") {
+      document.documentElement.classList.add("telly-unlocked");
+    }
+  } catch (e) {}
+</script>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1410">
 <meta name="description" content="Paste a YouTube link and watch it on a retro TV.">
@@ -375,6 +385,69 @@
     border: 0;
   }
 
+  /* ---------- passcode gate ---------- */
+  #gate {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: max(1.5rem, env(safe-area-inset-top)) 1.5rem max(1.5rem, env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, #1E1610 0%, #12100C 100%);
+  }
+  html.telly-unlocked #gate { display: none; }
+  html:not(.telly-unlocked) body { overflow: hidden; }
+  .gate-panel {
+    width: 100%;
+    max-width: 360px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    background: linear-gradient(180deg, #3C3C41 0%, #232327 10%, #1A1A1D 100%);
+    border: 1px solid #0A0A0C;
+    border-radius: 12px;
+    padding: 1.6rem 1.35rem;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.12);
+    text-align: center;
+  }
+  .gate-title {
+    font-family: "Courier New", monospace;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    font-size: 1.3rem;
+    margin: 0;
+    color: var(--silver);
+  }
+  .gate-sub { margin: 0 0 0.3rem; font-size: 0.9rem; color: #8F8877; }
+  #gate-pass {
+    background: #0F0F11;
+    border: 2px solid #3A3A3E;
+    border-radius: 6px;
+    color: var(--osd-green);
+    font-family: "Courier New", monospace;
+    font-size: 1.1rem;
+    letter-spacing: 0.15em;
+    text-align: center;
+    padding: 0.7rem 0.8rem;
+  }
+  #gate-pass:focus { outline: 3px solid var(--led-amber); outline-offset: 2px; }
+  #gate-go {
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #E4E2DA;
+    background: linear-gradient(180deg, #4A4A4F 0%, #2E2E32 45%, #232327 100%);
+    border: 1px solid #101012;
+    border-radius: 4px;
+    padding: 0.7rem 1.1rem;
+    cursor: pointer;
+    box-shadow: 0 2px 0 #0A0A0C, inset 0 1px 0 rgba(255,255,255,0.15);
+  }
+  #gate-go:active { transform: translateY(1px); }
+  #gate-go:focus-visible { outline: 3px solid var(--led-amber); outline-offset: 3px; }
+  .gate-error { min-height: 1.2em; margin: 0; font-size: 0.85rem; color: #FF7A6B; }
+
   /* ---------- footer: subtle support link ---------- */
   .site-footer {
     width: 100%;
@@ -453,6 +526,18 @@
 </style>
 </head>
 <body>
+
+<div id="gate" role="dialog" aria-modal="true" aria-labelledby="gate-title">
+  <form id="gate-form" class="gate-panel" autocomplete="off">
+    <h1 id="gate-title" class="gate-title">The Telly</h1>
+    <p class="gate-sub">Enter the passcode to watch.</p>
+    <label for="gate-pass" class="sr-only">Passcode</label>
+    <input type="password" id="gate-pass" inputmode="text" autocapitalize="off"
+           autocomplete="current-password" spellcheck="false" aria-describedby="gate-error">
+    <button type="submit" id="gate-go">Enter</button>
+    <p id="gate-error" class="gate-error" role="alert" aria-live="assertive"></p>
+  </form>
+</div>
 
 <header>
   <h1>The Telly</h1>
@@ -555,6 +640,62 @@
     <span class="coffee-cup" aria-hidden="true">&#9749;</span> Buy me a coffee
   </a>
 </footer>
+
+<script>
+/* ---------- passcode gate ---------- */
+(function () {
+  "use strict";
+  var HASH = "43f38c373629bb186bdbe38ed3e642767ae4c9284e3fb30f98a4fd8446ad488e";
+  var SALT = "the-telly::";
+  var KEY = "telly-gate-unlocked";
+  var root = document.documentElement;
+  var gate = document.getElementById("gate");
+  var form = document.getElementById("gate-form");
+  var input = document.getElementById("gate-pass");
+  var err = document.getElementById("gate-error");
+
+  function removeGate() { if (gate && gate.parentNode) gate.parentNode.removeChild(gate); }
+
+  // Already unlocked on this device (decided in <head> before first paint).
+  if (root.classList.contains("telly-unlocked")) { removeGate(); return; }
+
+  function hex(buf) {
+    return Array.prototype.map.call(new Uint8Array(buf),
+      function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
+  }
+
+  function unlock() {
+    root.classList.add("telly-unlocked");
+    try { localStorage.setItem(KEY, HASH); } catch (e) {}
+    removeGate();
+    var link = document.getElementById("link");
+    if (link) link.focus();
+  }
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var pass = input.value;
+    if (!pass) return;
+    if (!(window.crypto && crypto.subtle)) {
+      err.textContent = "This browser can't check the passcode here. Open the page over https.";
+      return;
+    }
+    crypto.subtle.digest("SHA-256", new TextEncoder().encode(SALT + pass))
+      .then(function (buf) {
+        if (hex(buf) === HASH) {
+          unlock();
+        } else {
+          err.textContent = "That's not the passcode. Try again.";
+          input.value = "";
+          input.focus();
+        }
+      })
+      .catch(function () { err.textContent = "Something went wrong. Try again."; });
+  });
+
+  input.focus();
+})();
+</script>
 
 <script>
 (function () {
