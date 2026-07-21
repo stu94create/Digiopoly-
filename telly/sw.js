@@ -1,7 +1,7 @@
 // Service worker for The Telly. Scoped to the telly/ folder so it runs
 // independently of Digiopoly's root service worker and never touches its cache.
 // Bump this version when the app shell changes so clients pick up the new build.
-const CACHE = 'the-telly-v1';
+const CACHE = 'the-telly-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -43,21 +43,18 @@ self.addEventListener('fetch', (event) => {
   // Only manage assets inside our own folder.
   if (!url.pathname.includes('/telly/')) return;
 
-  // Cache-first with background refresh: the TV interface opens instantly, even
-  // offline, and the cache is quietly updated for next launch. If the cache was
-  // ever wiped by another worker on this origin, the network response re-fills it.
+  // Network-first with cache fallback: when online, always serve the live page
+  // and a fresh YouTube connection (so the worker never serves a stale build).
+  // Fall back to the cached shell only when the network is unavailable (offline).
   event.respondWith(
-    caches.match(req).then((cached) => {
-      const network = fetch(req)
-        .then((resp) => {
-          if (resp && resp.ok) {
-            const clone = resp.clone();
-            caches.open(CACHE).then((c) => c.put(req, clone)).catch(() => {});
-          }
-          return resp;
-        })
-        .catch(() => cached);
-      return cached || network;
-    })
+    fetch(req)
+      .then((resp) => {
+        if (resp && resp.ok) {
+          const clone = resp.clone();
+          caches.open(CACHE).then((c) => c.put(req, clone)).catch(() => {});
+        }
+        return resp;
+      })
+      .catch(() => caches.match(req))
   );
 });
