@@ -1193,18 +1193,45 @@
        telly/?v=VIDEOID
        telly/#https://www.youtube.com/watch?v=VIDEOID
      This is what the "Share to The Telly" iOS Shortcut targets. */
+  // Pull a playable YouTube link out of a string (Android's share target often
+  // hands over a whole caption like "Great clip https://youtu.be/ID", not a bare URL).
+  function extractLink(s) {
+    if (!s) return null;
+    s = ("" + s).trim();
+    if (parseLink(s)) return s;
+    var m = s.match(/https?:\/\/[^\s]+/);
+    if (m && parseLink(m[0])) return m[0];
+    var m2 = s.match(/(?:www\.)?(?:youtube\.com|youtu\.be)\/[^\s]+/i);
+    if (m2 && parseLink(m2[0])) return m2[0];
+    return null;
+  }
+
   function readDeepLink() {
     try {
       var params = new URLSearchParams(location.search);
-      var raw = params.get("url") || params.get("v") || "";
-      if (!raw && location.hash.length > 1) raw = decodeURIComponent(location.hash.slice(1));
-      raw = (raw || "").trim();
-      if (!raw) return null;
-      // A bare 11-ish char video id (no dots or slashes) -> make it a youtu.be link
-      if (/^[A-Za-z0-9_-]{6,20}$/.test(raw) && raw.indexOf(".") === -1 && raw.indexOf("/") === -1) {
-        raw = "https://youtu.be/" + raw;
+
+      // Our own deep-link params (and the share target's "url" field).
+      var direct = (params.get("url") || params.get("v") || "").trim();
+      if (direct) {
+        // A bare 11-ish char video id (no dots or slashes) -> make it a youtu.be link.
+        if (/^[A-Za-z0-9_-]{6,20}$/.test(direct) && direct.indexOf(".") === -1 && direct.indexOf("/") === -1) {
+          direct = "https://youtu.be/" + direct;
+        }
+        if (parseLink(direct)) return direct;
+        var fromDirect = extractLink(direct);
+        if (fromDirect) return fromDirect;
       }
-      return parseLink(raw) ? raw : null;   // only accept links we can actually play
+
+      // Android share target usually delivers the link inside "text" (or "title").
+      var fromText = extractLink(params.get("text")) || extractLink(params.get("title"));
+      if (fromText) return fromText;
+
+      // Hash form: telly/#<youtube url>
+      if (location.hash.length > 1) {
+        var h = decodeURIComponent(location.hash.slice(1)).trim();
+        return extractLink(h);
+      }
+      return null;
     } catch (e) { return null; }
   }
 
