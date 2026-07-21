@@ -385,6 +385,25 @@
     border: 0;
   }
 
+  /* ---------- auto full screen toggle ---------- */
+  .autofs {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.8rem;
+    font-size: 0.82rem;
+    color: #A8A8B0;
+    cursor: pointer;
+    user-select: none;
+  }
+  .autofs input {
+    width: 1.05rem;
+    height: 1.05rem;
+    accent-color: var(--led-amber);
+    cursor: pointer;
+  }
+  .autofs input:focus-visible { outline: 3px solid var(--led-amber); outline-offset: 2px; }
+
   /* ---------- passcode gate ---------- */
   #gate {
     position: fixed;
@@ -607,6 +626,10 @@
         <span class="sym" aria-hidden="true">&#9167;</span><span class="lbl">Eject</span>
       </button>
     </div>
+
+    <label class="autofs">
+      <input type="checkbox" id="autofs-toggle"> Auto full screen when a video starts
+    </label>
   </section>
 </main>
 
@@ -725,12 +748,17 @@
     rewind: $("rewind"), forward: $("forward"),
     voldown: $("voldown"), volup: $("volup"), eject: $("eject"),
     fullscreen: $("fullscreen"), exitfs: $("exitfs"),
+    autofsToggle: $("autofs-toggle"),
     screen: document.querySelector(".screen"),
     status: $("status"), alert: $("alert"), statusVisible: $("status-visible"),
     osd: $("osd"), staticEl: $("static"), led: $("led")
   };
 
   var fauxFs = false;
+  // Auto full screen (cinema mode) when a video starts. On by default; remembered.
+  var autoFs = true;
+  try { autoFs = localStorage.getItem("telly-autofs") !== "0"; } catch (e) {}
+  var autoFsArmed = false;  // enter cinema once per tape, so it isn't re-forced
 
   /* ---------- announcements ---------- */
   function announce(msg) {
@@ -975,6 +1003,11 @@
         announce("Playing");
       }
       osd("PLAY ▶", 2500);
+      // Auto full screen: drop into cinema mode the first time this tape plays.
+      if (autoFs && autoFsArmed && !fauxFs && !nativeFsElement()) {
+        autoFsArmed = false;
+        enterFaux();
+      }
     } else if (e.data === YT.PlayerState.PAUSED) {
       playing = false;
       setPlayLabel(false);
@@ -1020,6 +1053,7 @@
     setStatic(true);
     osdOff();
     currentTitle = "";
+    autoFsArmed = true;   // arm auto full screen for this tape
 
     announce("Tape inserted. Loading, please wait.");
     soundInsert();
@@ -1066,6 +1100,7 @@
     tapeIn = false;
     playing = false;
     currentTitle = "";
+    autoFsArmed = false;
     setControls(false);
     setStatic(true);
     osdOff();
@@ -1164,6 +1199,11 @@
   els.insert.addEventListener("click", insertTape);
   els.fullscreen.addEventListener("click", toggleFullscreen);
   els.exitfs.addEventListener("click", exitFullscreen);
+  els.autofsToggle.checked = autoFs;
+  els.autofsToggle.addEventListener("change", function () {
+    autoFs = els.autofsToggle.checked;
+    try { localStorage.setItem("telly-autofs", autoFs ? "1" : "0"); } catch (e) {}
+  });
   els.link.addEventListener("keydown", function (e) {
     if (e.key === "Enter") { e.preventDefault(); insertTape(); }
   });
