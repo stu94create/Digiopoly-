@@ -311,6 +311,11 @@
 
   #insert { letter-spacing: 0.05em; }
 
+  button.secondary {
+    background: linear-gradient(180deg, #3A3A3F 0%, #26262A 55%, #1E1E22 100%);
+    white-space: nowrap;
+  }
+
   /* transport row: one connected bank of piano-key buttons */
   .controls {
     margin-top: 0.9rem;
@@ -599,9 +604,10 @@
              autocomplete="off" spellcheck="false"
              inputmode="url" enterkeyhint="go" autocapitalize="off"
              aria-describedby="link-hint">
+      <button id="paste" class="secondary" aria-label="Paste a copied YouTube link and play it">&#128203; Paste</button>
       <button id="insert" aria-label="Insert tape, load and play the link">Insert tape</button>
     </div>
-    <p id="link-hint" class="sr-only">Paste a YouTube web address, then activate Insert tape to load and play it.</p>
+    <p id="link-hint" class="sr-only">Copy a YouTube link, then tap Paste to play it. Or type a link and tap Insert tape.</p>
 
     <div class="controls" role="group" aria-label="Playback controls">
       <button id="rewind" disabled aria-label="Rewind 10 seconds">
@@ -744,7 +750,7 @@
 
   var $ = function (id) { return document.getElementById(id); };
   var els = {
-    link: $("link"), insert: $("insert"), playpause: $("playpause"),
+    link: $("link"), insert: $("insert"), paste: $("paste"), playpause: $("playpause"),
     rewind: $("rewind"), forward: $("forward"),
     voldown: $("voldown"), volup: $("volup"), eject: $("eject"),
     fullscreen: $("fullscreen"), exitfs: $("exitfs"),
@@ -1195,8 +1201,41 @@
   document.addEventListener("fullscreenchange", onNativeFsChange);
   document.addEventListener("webkitfullscreenchange", onNativeFsChange);
 
+  /* ---------- paste a copied link ---------- */
+  // Since YouTube's share sheet often hands Shortcuts an empty link (especially
+  // for Shorts), the reliable path is: copy the link in YouTube, then tap Paste.
+  function pasteAndPlay() {
+    if (!(navigator.clipboard && navigator.clipboard.readText)) {
+      announceAlert("This browser won't let The Telly read the clipboard. Paste the link into the box above instead.");
+      els.link.focus();
+      return;
+    }
+    navigator.clipboard.readText().then(function (text) {
+      var link = extractLink(text);
+      if (link) {
+        els.link.value = link;
+        insertTape();
+      } else {
+        announceAlert("No YouTube link found on the clipboard. Copy a link from YouTube first, then tap Paste.");
+        els.link.focus();
+      }
+    }).catch(function () {
+      announceAlert("Couldn't read the clipboard. Paste the link into the box above instead.");
+      els.link.focus();
+    });
+  }
+
+  // Auto-play when a valid link is pasted straight into the field.
+  els.link.addEventListener("paste", function () {
+    setTimeout(function () {
+      var link = extractLink(els.link.value);
+      if (link) { els.link.value = link; insertTape(); }
+    }, 0);
+  });
+
   /* ---------- wiring ---------- */
   els.insert.addEventListener("click", insertTape);
+  els.paste.addEventListener("click", pasteAndPlay);
   els.fullscreen.addEventListener("click", toggleFullscreen);
   els.exitfs.addEventListener("click", exitFullscreen);
   els.autofsToggle.checked = autoFs;
