@@ -372,6 +372,38 @@
     border: 0;
   }
 
+  /* ---------- footer: subtle support link ---------- */
+  .site-footer {
+    width: 100%;
+    max-width: 760px;
+    margin-top: 1.75rem;
+    display: flex;
+    justify-content: center;
+  }
+  .coffee {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-family: inherit;
+    font-size: 0.85rem;
+    letter-spacing: 0.03em;
+    color: #B5AC97;
+    text-decoration: none;
+    padding: 0.5rem 0.95rem;
+    border: 1px solid #4A3A24;
+    border-radius: 999px;
+    background: rgba(0,0,0,0.25);
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+  }
+  .coffee:hover,
+  .coffee:focus-visible {
+    color: var(--led-amber);
+    border-color: var(--led-amber);
+    background: rgba(0,0,0,0.4);
+  }
+  .coffee:focus-visible { outline: 3px solid var(--led-amber); outline-offset: 3px; }
+  .coffee-cup { font-size: 1rem; }
+
   /* ---------- full screen / cinema mode ---------- */
   .exit-fs {
     display: none;
@@ -513,6 +545,13 @@
   <p>The Telly accepts standard YouTube links, short youtu.be links, and Shorts links.
   If a link includes a timestamp, playback starts from there.</p>
 </section>
+
+<footer class="site-footer">
+  <a class="coffee" href="https://ko-fi.com/st94410093" target="_blank" rel="noopener noreferrer"
+     aria-label="Buy me a coffee on Ko-fi (opens in a new tab)">
+    <span class="coffee-cup" aria-hidden="true">&#9749;</span> Buy me a coffee
+  </a>
+</footer>
 
 <script>
 (function () {
