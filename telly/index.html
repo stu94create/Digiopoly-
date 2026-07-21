@@ -392,6 +392,11 @@
   }
   .screen.fs-active .exit-fs { display: flex; }
 
+  /* In full screen / cinema mode, drop the retro scanlines and glare so the
+     picture is clean and crisp. They return when you exit. */
+  .screen.fs-active .scanlines,
+  .screen.fs-active .glare { display: none; }
+
   /* iPhone (and any browser without element fullscreen): fill the window */
   .screen.faux-fs {
     position: fixed;
