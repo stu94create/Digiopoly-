@@ -358,6 +358,40 @@
     border: 0;
   }
 
+  /* ---------- full screen / cinema mode ---------- */
+  .exit-fs {
+    display: none;
+    position: absolute;
+    top: 12px; right: 12px;
+    z-index: 6;
+    width: 46px; height: 46px;
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    line-height: 1;
+    color: #E4E2DA;
+    background: rgba(18,18,20,0.7);
+    border: 1px solid rgba(255,255,255,0.28);
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  }
+  .screen.fs-active .exit-fs { display: flex; }
+
+  /* iPhone (and any browser without element fullscreen): fill the window */
+  .screen.faux-fs {
+    position: fixed;
+    inset: 0;
+    width: 100vw; height: 100dvh;
+    z-index: 9999;
+    border-radius: 0;
+    aspect-ratio: auto;
+  }
+  /* Native fullscreen: stretch to fill instead of letterboxing at 4:3 */
+  .screen:fullscreen { width: 100%; height: 100%; border-radius: 0; aspect-ratio: auto; }
+  .screen:-webkit-full-screen { width: 100%; height: 100%; border-radius: 0; aspect-ratio: auto; }
+  body.no-scroll { overflow: hidden; }
+
   @media (prefers-reduced-motion: reduce) {
     .static.on { animation: none; }
     * { transition: none !important; }
@@ -381,6 +415,7 @@
         <div class="scanlines" aria-hidden="true"></div>
         <div class="glare" aria-hidden="true"></div>
         <div id="osd" class="osd" aria-hidden="true"></div>
+        <button id="exitfs" class="exit-fs" aria-label="Exit full screen">&#10005;</button>
       </div>
     </div>
     <div class="side-panel" aria-hidden="true">
@@ -422,6 +457,9 @@
       <button id="volup" disabled aria-label="Volume up">
         <span class="sym" aria-hidden="true">+</span><span class="lbl">Vol</span>
       </button>
+      <button id="fullscreen" disabled aria-label="Toggle full screen">
+        <span class="sym" aria-hidden="true">&#9974;</span><span class="lbl">Full</span>
+      </button>
       <button id="eject" disabled aria-label="Eject tape">
         <span class="sym" aria-hidden="true">&#9167;</span><span class="lbl">Eject</span>
       </button>
@@ -435,8 +473,12 @@
   <h2>Keyboard shortcuts</h2>
   <p>These work anywhere on the page except while typing in the link box:
   <kbd>K</kbd> play or pause, <kbd>J</kbd> rewind 10 seconds, <kbd>L</kbd> fast forward 10 seconds,
-  <kbd>-</kbd> and <kbd>=</kbd> volume down and up, <kbd>E</kbd> eject the tape.
+  <kbd>-</kbd> and <kbd>=</kbd> volume down and up, <kbd>F</kbd> full screen, <kbd>E</kbd> eject the tape.
   Press <kbd>Enter</kbd> in the link box to insert the tape.</p>
+  <p>The <strong>Full</strong> button fills your whole screen. On phones that don't allow true
+  full screen, it switches to a cinema mode that fills the browser window instead &mdash; turn your
+  phone sideways for the biggest picture. Tap the <kbd>&#10005;</kbd> in the corner, press <kbd>E</kbd>,
+  or eject the tape to come back.</p>
   <p>The Telly accepts standard YouTube links, short youtu.be links, and Shorts links.
   If a link includes a timestamp, playback starts from there.</p>
 </section>
@@ -458,9 +500,13 @@
     link: $("link"), insert: $("insert"), playpause: $("playpause"),
     rewind: $("rewind"), forward: $("forward"),
     voldown: $("voldown"), volup: $("volup"), eject: $("eject"),
+    fullscreen: $("fullscreen"), exitfs: $("exitfs"),
+    screen: document.querySelector(".screen"),
     status: $("status"), statusVisible: $("status-visible"),
     osd: $("osd"), staticEl: $("static"), led: $("led")
   };
+
+  var fauxFs = false;
 
   /* ---------- announcements ---------- */
   function announce(msg) {
@@ -482,7 +528,7 @@
   function setStatic(on) { els.staticEl.classList.toggle("on", on); }
 
   function setControls(enabled) {
-    ["playpause", "rewind", "forward", "voldown", "volup", "eject"].forEach(function (k) {
+    ["playpause", "rewind", "forward", "voldown", "volup", "fullscreen", "eject"].forEach(function (k) {
       els[k].disabled = !enabled;
     });
   }
@@ -782,6 +828,7 @@
 
   function ejectTape() {
     if (!tapeIn && els.eject.disabled) return;
+    if (nativeFsElement() || fauxFs) exitFullscreen();
     if (player && player.stopVideo) player.stopVideo();
     tapeIn = false;
     playing = false;
@@ -822,8 +869,68 @@
     announce("Volume " + v + " percent");
   }
 
+  /* ---------- full screen / cinema mode ---------- */
+  function nativeFsElement() {
+    return document.fullscreenElement || document.webkitFullscreenElement || null;
+  }
+
+  function setFsLabel(on) {
+    els.fullscreen.innerHTML = on
+      ? '<span class="sym" aria-hidden="true">&#10005;</span><span class="lbl">Exit</span>'
+      : '<span class="sym" aria-hidden="true">&#9974;</span><span class="lbl">Full</span>';
+    els.fullscreen.setAttribute("aria-label", on ? "Exit full screen" : "Toggle full screen");
+  }
+
+  function enterFaux() {
+    fauxFs = true;
+    els.screen.classList.add("faux-fs", "fs-active");
+    document.body.classList.add("no-scroll");
+    setFsLabel(true);
+    osd("FULL SCREEN", 1500);
+    announce("Full screen. Rotate your device for the biggest picture. Press Exit or the E key to leave.");
+  }
+
+  function exitFaux() {
+    fauxFs = false;
+    els.screen.classList.remove("faux-fs", "fs-active");
+    document.body.classList.remove("no-scroll");
+    setFsLabel(false);
+  }
+
+  function toggleFullscreen() {
+    if (!tapeIn) return;
+    if (nativeFsElement() || fauxFs) { exitFullscreen(); return; }
+    var el = els.screen;
+    if (el.requestFullscreen) {
+      el.requestFullscreen().catch(function () { enterFaux(); });
+    } else if (el.webkitRequestFullscreen) {
+      el.webkitRequestFullscreen();
+    } else {
+      enterFaux();   // iPhone and older browsers
+    }
+  }
+
+  function exitFullscreen() {
+    if (nativeFsElement()) {
+      if (document.exitFullscreen) document.exitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+    }
+    if (fauxFs) exitFaux();
+  }
+
+  function onNativeFsChange() {
+    var on = !!nativeFsElement();
+    els.screen.classList.toggle("fs-active", on);
+    if (!on && !fauxFs) setFsLabel(false);
+    else setFsLabel(on || fauxFs);
+  }
+  document.addEventListener("fullscreenchange", onNativeFsChange);
+  document.addEventListener("webkitfullscreenchange", onNativeFsChange);
+
   /* ---------- wiring ---------- */
   els.insert.addEventListener("click", insertTape);
+  els.fullscreen.addEventListener("click", toggleFullscreen);
+  els.exitfs.addEventListener("click", exitFullscreen);
   els.link.addEventListener("keydown", function (e) {
     if (e.key === "Enter") { e.preventDefault(); insertTape(); }
   });
@@ -843,6 +950,7 @@
     else if (k === "l") { e.preventDefault(); seek(10); }
     else if (k === "-") { e.preventDefault(); volume(-10); }
     else if (k === "=") { e.preventDefault(); volume(10); }
+    else if (k === "f") { e.preventDefault(); toggleFullscreen(); }
     else if (k === "e") { e.preventDefault(); ejectTape(); }
   });
 })();
