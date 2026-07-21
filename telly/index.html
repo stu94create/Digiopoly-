@@ -513,6 +513,14 @@
 (function () {
   "use strict";
 
+  // Register The Telly's own service worker (scoped to this folder) so the
+  // interface loads instantly and works offline. Failures are harmless.
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js").catch(function () {});
+    });
+  }
+
   var player = null;
   var apiReady = false;
   var pendingLoad = null;   // {id, start} waiting for API
