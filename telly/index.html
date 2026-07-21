@@ -420,6 +420,7 @@
 </header>
 
 <main>
+<p class="sr-only">The Telly plays YouTube videos in a screen styled like a retro television. To watch something, enter a YouTube link in the field below and activate the Insert tape button. Playback controls &mdash; play or pause, rewind, fast forward, volume, full screen and eject &mdash; are grouped below the link field and become available once a video is loaded. Status messages, such as what is now playing, are announced automatically.</p>
 <div class="tv">
   <div class="tv-top">
     <div class="screen-bezel">
@@ -441,7 +442,7 @@
   <div class="nameplate" aria-hidden="true">THE TELLY <span id="led" class="power-led"></span></div>
 </div>
 
-  <section class="vcr" aria-label="Video recorder">
+  <section class="vcr" aria-label="Video link and playback controls">
     <div class="vcr-brand" aria-hidden="true">Telly-Matic 3000 &middot; Hi-Fi Stereo</div>
     <div class="tape-slot" aria-hidden="true"></div>
     <div class="vcr-display" aria-hidden="true">
@@ -451,11 +452,14 @@
     <label for="link">YouTube link</label>
     <div class="slot-row">
       <input type="url" id="link" placeholder="https://www.youtube.com/watch?v=..."
-             autocomplete="off" spellcheck="false">
-      <button id="insert">Insert tape</button>
+             autocomplete="off" spellcheck="false"
+             inputmode="url" enterkeyhint="go" autocapitalize="off"
+             aria-describedby="link-hint">
+      <button id="insert" aria-label="Insert tape, load and play the link">Insert tape</button>
     </div>
+    <p id="link-hint" class="sr-only">Paste a YouTube web address, then activate Insert tape to load and play it.</p>
 
-    <div class="controls">
+    <div class="controls" role="group" aria-label="Playback controls">
       <button id="rewind" disabled aria-label="Rewind 10 seconds">
         <span class="sym" aria-hidden="true">&#9664;&#9664;</span><span class="lbl">Rew</span>
       </button>
@@ -474,18 +478,26 @@
       <button id="fullscreen" disabled aria-label="Toggle full screen">
         <span class="sym" aria-hidden="true">&#9974;</span><span class="lbl">Full</span>
       </button>
-      <button id="eject" disabled aria-label="Eject tape">
+      <button id="eject" disabled aria-label="Eject tape, remove the current video">
         <span class="sym" aria-hidden="true">&#9167;</span><span class="lbl">Eject</span>
       </button>
     </div>
   </section>
 </main>
 
-<div id="status" class="sr-only" role="status" aria-live="polite"></div>
+<div id="status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<div id="alert" class="sr-only" role="alert" aria-live="assertive" aria-atomic="true"></div>
 
 <section class="help">
+  <h2>How to use</h2>
+  <p>Enter a YouTube link in the field above and activate <strong>Insert tape</strong>. Then use the
+  on-screen buttons &mdash; Rewind, Play or Pause, Fast forward, Volume down and up, Full screen, and
+  Eject &mdash; to control playback. Every action has a button, so a keyboard is not required. When you
+  are using a screen reader such as VoiceOver, the controls become available once a video has loaded,
+  and each change (now playing, paused, volume, and any problem loading a video) is announced for you.</p>
+
   <h2>Keyboard shortcuts</h2>
-  <p>These work anywhere on the page except while typing in the link box:
+  <p>If you have a physical keyboard, these work anywhere on the page except while typing in the link box:
   <kbd>K</kbd> play or pause, <kbd>J</kbd> rewind 10 seconds, <kbd>L</kbd> fast forward 10 seconds,
   <kbd>-</kbd> and <kbd>=</kbd> volume down and up, <kbd>F</kbd> full screen, <kbd>E</kbd> eject the tape.
   Press <kbd>Enter</kbd> in the link box to insert the tape.</p>
@@ -516,7 +528,7 @@
     voldown: $("voldown"), volup: $("volup"), eject: $("eject"),
     fullscreen: $("fullscreen"), exitfs: $("exitfs"),
     screen: document.querySelector(".screen"),
-    status: $("status"), statusVisible: $("status-visible"),
+    status: $("status"), alert: $("alert"), statusVisible: $("status-visible"),
     osd: $("osd"), staticEl: $("static"), led: $("led")
   };
 
@@ -527,6 +539,14 @@
     els.status.textContent = "";
     // brief clear so repeated messages are re-announced
     setTimeout(function () { els.status.textContent = msg; }, 60);
+    els.statusVisible.textContent = msg;
+  }
+
+  // Problems (bad link, no signal, playback errors) are urgent: send them to the
+  // assertive alert region so a screen reader interrupts and reads them right away.
+  function announceAlert(msg) {
+    els.alert.textContent = "";
+    setTimeout(function () { els.alert.textContent = msg; }, 60);
     els.statusVisible.textContent = msg;
   }
 
@@ -718,7 +738,7 @@
     osd("NO SIGNAL");
     els.led.classList.remove("on");
     els.insert.disabled = false;
-    announce("No signal. The Telly couldn't reach YouTube's player. " +
+    announceAlert("No signal. The Telly couldn't reach YouTube's player. " +
       "App previews often block outside connections, so open this file in Safari " +
       "or from your GitHub Pages site and try again.");
   }
@@ -782,7 +802,7 @@
     } else {
       msg += "That link couldn't be played. Check it and try again.";
     }
-    announce(msg);
+    announceAlert(msg);
     tapeIn = false;
     setControls(false);
     els.eject.disabled = false;
@@ -792,7 +812,7 @@
   function insertTape() {
     var parsed = parseLink(els.link.value);
     if (!parsed) {
-      announce("That doesn't look like a YouTube link. Paste a full link, for example youtube.com/watch, and try again.");
+      announceAlert("That doesn't look like a YouTube link. Paste a full link, for example youtube.com/watch, and try again.");
       els.link.focus();
       return;
     }
