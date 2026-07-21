@@ -2,8 +2,18 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>The Telly</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a1410">
+<meta name="description" content="Paste a YouTube link and watch it on a retro TV.">
+<!-- Add to Home Screen (opens as a standalone app) -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="The Telly">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-512.png">
 <style>
   :root {
     --wood-dark: #3E2714;
@@ -30,6 +40,10 @@
     flex-direction: column;
     align-items: center;
     padding: 1.5rem 1rem 3rem;
+    padding-top: max(1.5rem, env(safe-area-inset-top));
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+    padding-bottom: max(3rem, env(safe-area-inset-bottom));
   }
 
   header { text-align: center; margin-bottom: 1.25rem; }

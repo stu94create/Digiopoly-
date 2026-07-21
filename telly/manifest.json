@@ -1,0 +1,16 @@
+{
+  "name": "The Telly",
+  "short_name": "The Telly",
+  "description": "Paste a YouTube link and watch it on a retro TV.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#12100C",
+  "theme_color": "#1a1410",
+  "icons": [
+    { "src": "icon-180.png", "sizes": "180x180", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
