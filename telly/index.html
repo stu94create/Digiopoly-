@@ -842,10 +842,11 @@
         noSignal();
       } else {
         pendingLoad = parsed;
-        // watchdog: if YouTube's player still hasn't arrived, say so
+        // watchdog: if YouTube's player still hasn't arrived, say so.
+        // Give slow mobile connections plenty of time before giving up.
         setTimeout(function () {
           if (!apiReady && pendingLoad) noSignal();
-        }, 6000);
+        }, 12000);
       }
     }, 2100);
   }
