@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#101a2e">
+<title>Disaster Mayor</title>
+<meta name="description" content="You are the mayor. Everything is on fire. Also there are llamas.">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ======= CITY CANVAS ======= -->
+  <main id="stage">
+    <canvas id="city" aria-label="City map of Port Fiasco"></canvas>
+
+    <!-- floating tile info popup -->
+    <div id="tile-popup" class="popup hidden" role="dialog" aria-label="Building information"></div>
+
+    <!-- news ticker -->
+    <div id="ticker" class="ticker hidden" aria-live="polite"></div>
+  </main>
+
+  <!-- ======= HUD (top bar) ======= -->
+  <header id="hud" class="hidden" aria-label="City status">
+    <div class="hud-left">
+      <button id="btn-pause-menu" class="icon-btn" aria-label="Open menu" title="Menu (Esc)">☰</button>
+      <div class="day-chip">
+        <span id="hud-day">Day 1</span>
+        <span id="hud-clock" class="clock">☀️</span>
+      </div>
+      <button id="btn-pause" class="icon-btn" aria-label="Pause or resume" title="Pause (Space)">⏸</button>
+      <button id="btn-speed" class="icon-btn" aria-label="Change game speed" title="Speed">1×</button>
+    </div>
+    <div class="hud-stats" role="group" aria-label="City statistics">
+      <div class="stat" id="stat-population" title="Population">
+        <span class="stat-ico">👥</span><span class="stat-num" id="num-population">0</span>
+      </div>
+      <div class="stat" id="stat-budget" title="City budget">
+        <span class="stat-ico">💰</span><span class="stat-num" id="num-budget">$0</span>
+      </div>
+      <div class="stat meter" id="stat-happiness" title="Happiness">
+        <span class="stat-ico">😊</span><span class="bar"><span class="fill" id="bar-happiness"></span></span>
+      </div>
+      <div class="stat meter" id="stat-safety" title="Safety">
+        <span class="stat-ico">🛡️</span><span class="bar"><span class="fill" id="bar-safety"></span></span>
+      </div>
+      <div class="stat meter" id="stat-infrastructure" title="Infrastructure">
+        <span class="stat-ico">🏗️</span><span class="bar"><span class="fill" id="bar-infrastructure"></span></span>
+      </div>
+      <div class="stat meter chaos" id="stat-chaos" title="Chaos — if this fills up, it's over">
+        <span class="stat-ico">🌪️</span><span class="bar"><span class="fill" id="bar-chaos"></span></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ======= SIDE PANEL: incidents + mayor's desk ======= -->
+  <aside id="panel" class="hidden" aria-label="Incidents and mayor actions">
+    <div class="panel-head">
+      <h2>🚨 Incidents</h2>
+      <span id="incident-count" class="count-pill">0</span>
+    </div>
+    <div id="incident-list" class="incident-list">
+      <p id="all-clear" class="all-clear">All quiet. Suspiciously quiet…</p>
+    </div>
+    <div class="desk">
+      <h2>🎩 Mayor's Desk</h2>
+      <div id="desk-actions" class="desk-actions"></div>
+    </div>
+  </aside>
+
+  <!-- ======= MAIN MENU ======= -->
+  <div id="menu" class="screen" role="dialog" aria-label="Main menu">
+    <div class="menu-card">
+      <div class="logo">
+        <span class="logo-top">DISASTER</span>
+        <span class="logo-bottom">MAYOR</span>
+        <span class="logo-emoji" aria-hidden="true">🔥🏙️🦙</span>
+      </div>
+      <p class="tagline">Keep the city alive. Ish.</p>
+      <nav class="menu-buttons">
+        <button id="btn-new" class="menu-btn primary">🏁 New Game</button>
+        <button id="btn-continue" class="menu-btn" disabled>▶️ Continue</button>
+        <button id="btn-howto" class="menu-btn">📖 How to Play</button>
+        <button id="btn-settings" class="menu-btn">⚙️ Settings</button>
+        <button id="btn-credits" class="menu-btn">🏆 Credits</button>
+      </nav>
+      <p class="menu-foot" id="menu-best"></p>
+    </div>
+  </div>
+
+  <!-- ======= MODALS ======= -->
+  <div id="modal-backdrop" class="modal-backdrop hidden">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-head">
+        <h2 id="modal-title">Title</h2>
+        <button id="modal-close" class="icon-btn" aria-label="Close dialog">✕</button>
+      </div>
+      <div id="modal-body" class="modal-body"></div>
+    </div>
+  </div>
+
+</div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
