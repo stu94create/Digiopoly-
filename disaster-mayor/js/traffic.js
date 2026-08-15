@@ -1,7 +1,8 @@
 // Traffic: civilian cars, pedestrians and dispatched emergency vehicles.
 // Cars random-walk the road graph; emergency vehicles BFS to incidents.
+// Damaged roads and congestion (UFO gawkers, parade floats) slow everyone.
 
-import { TILE, roadNeighbors, nearestRoadAdjacent, findRoadPath, isRoad, GRID_W, GRID_H } from './citygen.js';
+import { TILE, roadNeighbors, nearestRoadAdjacent, findRoadPath, tileAt } from './citygen.js';
 import { key, pick, rnd, chance, uid, lerp, clamp } from './utils.js';
 
 const CAR_COLORS = ['#e8734a', '#f2c14e', '#7bb661', '#5b8dd9', '#b17aff', '#e05f8a', '#c9cdd6', '#4fc3b8'];
@@ -13,6 +14,19 @@ function randomRoadTile(city) {
   const keys = [...city.roads];
   const k = pick(keys).split(',').map(Number);
   return { x: k[0], y: k[1] };
+}
+
+// Speed multiplier at a road tile: damaged surface + nearby congestion.
+// Emergency vehicles push through congestion better than civilians.
+function speedMult(state, tx, ty, emergency) {
+  let m = 1;
+  const t = tileAt(state.city, tx, ty);
+  if (t && t.damaged) m *= 0.55;
+  for (const c of state.congestion) {
+    const d = Math.hypot(tx + 0.5 - c.x, ty + 0.5 - c.y);
+    if (d < c.r) m *= emergency ? Math.min(1, c.mult + 0.3) : c.mult;
+  }
+  return m;
 }
 
 export function initTraffic(state) {
@@ -74,7 +88,10 @@ function tickWalker(state, w, dt) {
   if (w.wait > 0) { w.wait -= dt; return; }
   const a = center(w.from), b = center(w.to);
   const same = w.from.x === w.to.x && w.from.y === w.to.y;
-  if (!same) w.p += (w.speed * dt) / 1; // speed in tiles/sec
+  if (!same) {
+    const mult = w.kind === 'car' ? speedMult(state, w.to.x, w.to.y, false) : 1;
+    w.p += w.speed * mult * dt;
+  }
   if (w.p >= 1 || same) {
     const arrived = w.to;
     const next = pickNext(state, arrived, w.from);
@@ -152,13 +169,20 @@ function tickVehicle(state, v, dt) {
     if (inc && inc.state === 'responding') {
       inc.state = 'working';
       inc.workStarted = state.time;
+      // inline log push (events.js imports this module, so no log() import here)
+      state.log.push({
+        t: state.time, kind: 'status', id: uid(),
+        msg: `🚨 Crew has arrived at ${inc.locName}.`,
+        sr: `Crew on site at the ${inc.def.name.toLowerCase()} in ${inc.district}. Working now.`,
+      });
+      state.uiDirty = true;
     }
     v.x = lerp(v.x, v.target.x, 0.35);
     v.y = lerp(v.y, v.target.y, 0.35);
     return true;
   }
-  const a = center(v.path[v.i]), b = center(v.path[v.i + 1]);
-  v.p += (v.speed * dt);
+  const cur = v.path[Math.min(v.i + 1, v.path.length - 1)];
+  v.p += v.speed * speedMult(state, cur.x, cur.y, true) * dt;
   while (v.p >= 1 && v.i < v.path.length - 1) { v.p -= 1; v.i++; }
   const i2 = Math.min(v.i + 1, v.path.length - 1);
   const a2 = center(v.path[v.i]), b2 = center(v.path[i2]);

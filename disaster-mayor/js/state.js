@@ -1,9 +1,9 @@
-// Core game state: creation, per-tick simulation, difficulty ramp,
-// win/lose checks and the end-of-term mayor report.
+// Core game state: creation, per-tick simulation, cascading pressures,
+// difficulty ramp, win/lose checks and the end-of-term mayor report.
 
-import { generateCity } from './citygen.js';
+import { generateCity, districtAt } from './citygen.js';
 import { initTraffic, tickTraffic } from './traffic.js';
-import { spawnEvent, tickIncidents, recomputeBlocked, log } from './events.js';
+import { spawnEvent, tickIncidents, recomputeBlocked, log, makeUnits, incomeMult, unitsAvailable, UNIT_DEFS } from './events.js';
 import { clamp, rnd } from './utils.js';
 
 export const DAY_LEN = 90;      // seconds of sim time per day
@@ -34,6 +34,10 @@ export function newGame(opts = {}) {
     cars: [],
     peds: [],
     blocked: new Set(),
+    congestion: [],
+    units: makeUnits(),
+    boosts: { overtime: 0, reserves: 0 },
+    dangerFlags: {},
     log: [],
     score: { resolved: 0, catastrophes: 0, spent: 0 },
     spawnT: opts.attract ? Infinity : 8,
@@ -50,7 +54,15 @@ export function newGame(opts = {}) {
   return state;
 }
 
-const maxActive = (day) => 3 + (day >= 3 ? 1 : 0) + (day >= 5 ? 1 : 0);
+const maxActive = (day) => 3 + (day >= 2 ? 1 : 0) + (day >= 4 ? 1 : 0) + (day >= 6 ? 1 : 0);
+
+const DANGER_DEFS = [
+  { key: 'happiness', bad: (s) => s.happiness < 25, good: (s) => s.happiness > 33, msg: 'Happiness is critically low. The city is close to riots.' },
+  { key: 'safety', bad: (s) => s.safety < 30, good: (s) => s.safety > 38, msg: 'Safety is critically low. Unrest is feeding the chaos.' },
+  { key: 'infrastructure', bad: (s) => s.infrastructure < 30, good: (s) => s.infrastructure > 38, msg: 'Infrastructure is crumbling. Disasters will grow faster and crews will slow down.' },
+  { key: 'budget', bad: (s) => s.budget < 0, good: (s) => s.budget > 50, msg: 'The budget is in the red. Below minus $500 means bankruptcy.' },
+  { key: 'chaos', bad: (s) => s.chaos > 70, good: (s) => s.chaos < 60, msg: 'Chaos is dangerously high. At 100 the city collapses.' },
+];
 
 export function simTick(state, dt) {
   if (state.paused || state.over) return;
@@ -59,14 +71,15 @@ export function simTick(state, dt) {
   state.time += dt;
   state.day = Math.floor(state.time / DAY_LEN) + 1;
   if (state.day !== prevDay && !state.attract) {
-    log(state, `🌅 Day ${state.day} of your term. The city wakes up and immediately regrets it.`, 'info');
+    log(state, `🌅 Day ${state.day} of your term. The city wakes up and immediately regrets it.`, 'status',
+      `Day ${state.day} of ${TERM_DAYS} begins.`);
     state.uiDirty = true;
   }
 
   const s = state.stats;
 
-  // income: taxes trickle in, happier citizens spend more
-  s.budget += dt * (4 + 5 * (s.happiness / 100));
+  // income: taxes trickle in; blackouts and pigeon-based commerce collapse hurt
+  s.budget += dt * (4 + 5 * (s.happiness / 100)) * incomeMult(state);
 
   // gentle recovery toward a soft ceiling when things are calm
   const calm = state.incidents.length === 0;
@@ -78,13 +91,26 @@ export function simTick(state, dt) {
   const pressure = state.incidents.reduce((a, i) => a + i.sev, 0);
   s.chaos = clamp(s.chaos + dt * (pressure / 320) - dt * (calm ? 1.6 : 0.35), 0, 100);
 
+  // cascading unrest: low safety keeps stoking chaos
+  if (s.safety < 35) s.chaos = clamp(s.chaos + dt * (35 - s.safety) * 0.02, 0, 100);
+
   // population drifts with mood
   if (s.happiness > 70) s.population += dt * 1.2;
   else if (s.happiness < 30) s.population = Math.max(300, s.population - dt * 2);
 
-  // cooldowns
+  // boosts wind down
+  for (const k of Object.keys(state.boosts)) {
+    state.boosts[k] = Math.max(0, state.boosts[k] - dt);
+  }
+
+  // cooldowns recover slower while a civic-district incident dents public confidence
+  const civicTrouble = state.incidents.some((i) => {
+    const d = districtAt(state.city, i.tile.x, i.tile.y);
+    return d && d.type === 'civic';
+  });
+  const cdRate = civicTrouble ? 0.7 : 1;
   for (const k of Object.keys(state.cooldowns)) {
-    state.cooldowns[k] = Math.max(0, state.cooldowns[k] - dt);
+    state.cooldowns[k] = Math.max(0, state.cooldowns[k] - dt * cdRate);
   }
 
   tickIncidents(state, dt);
@@ -98,11 +124,44 @@ export function simTick(state, dt) {
       const base = Math.max(8, 19 - state.day * 1.6);
       state.spawnT = base * rnd(0.75, 1.3);
     }
+
+    // danger threshold crossings (announced once per crossing, with hysteresis)
+    for (const d of DANGER_DEFS) {
+      if (!state.dangerFlags[d.key] && d.bad(s)) {
+        state.dangerFlags[d.key] = true;
+        log(state, `🚨 ${d.msg}`, 'danger', d.msg);
+        state.uiDirty = true;
+      } else if (state.dangerFlags[d.key] && d.good(s)) {
+        state.dangerFlags[d.key] = false;
+        state.uiDirty = true;
+      }
+    }
   }
 
   state.fx.shake = Math.max(0, state.fx.shake - dt * 12);
 
   if (!state.attract) checkEnd(state);
+}
+
+export function statusSummary(state) {
+  const s = state.stats;
+  const danger = (k) => (state.dangerFlags[k] ? ' — danger' : '');
+  const parts = [
+    `Day ${Math.min(state.day, TERM_DAYS)} of ${TERM_DAYS}.`,
+    `Population ${Math.round(s.population).toLocaleString('en-US')}.`,
+    `Budget ${s.budget < 0 ? 'minus ' : ''}$${Math.abs(Math.round(s.budget)).toLocaleString('en-US')}${danger('budget')}.`,
+    `Happiness ${Math.round(s.happiness)}%${danger('happiness')}.`,
+    `Safety ${Math.round(s.safety)}%${danger('safety')}.`,
+    `Infrastructure ${Math.round(s.infrastructure)}%${danger('infrastructure')}.`,
+    `Chaos ${Math.round(s.chaos)}%${danger('chaos')}.`,
+  ];
+  const n = state.incidents.length;
+  parts.push(n === 0 ? 'No incidents active.' : `${n} incident${n === 1 ? '' : 's'} active.`);
+  const avail = Object.keys(UNIT_DEFS)
+    .map((k) => `${UNIT_DEFS[k].plural} ${unitsAvailable(state, k)}`)
+    .join(', ');
+  parts.push(`Available: ${avail}.`);
+  return parts.join(' ');
 }
 
 function checkEnd(state) {

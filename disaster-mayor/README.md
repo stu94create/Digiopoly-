@@ -10,19 +10,46 @@ Works on desktop, iPhone and iPad (mouse, keyboard and touch).
 **Play it:** open `disaster-mayor/index.html` via any static host (GitHub Pages works
 out of the box: `https://<user>.github.io/<repo>/disaster-mayor/`).
 
-## Features (first playable version)
+## Features (Version 2)
 
-- Animated canvas city: pseudo-3D buildings, moving cars & citizens, day/night cycle,
-  emergency vehicles with flashing lights that actually drive the road network to incidents
-- 12 disasters (5 realistic, 7 absurd), each with flavour text, escalation,
-  multiple responses and catastrophic consequences if ignored (burned-out rubble,
-  permanently broken roads…)
-- City stats: population, budget, happiness, safety, infrastructure and chaos
-- Mayor's Desk: global actions with cooldowns (press conference, fund drive, road
-  and utility works)
-- Pause, 2× speed, pan/pinch-zoom, tap-to-inspect buildings, keyboard controls
-- End-of-term Mayor's Report with ranks from **Beloved Mayor** to **Resign Immediately**
-- localStorage saving: continue game (autosave), best results, settings
+**Strategy**
+- Limited emergency units — 2 fire engines, 2 police, 1 medical team, 2 repair crews.
+  A dispatched crew stays busy until its incident is done, so you must prioritise.
+- Cascading consequences: fires spread to neighbouring buildings, floods damage roads
+  (which slow every vehicle including your crews), low safety feeds chaos, and neglected
+  infrastructure makes every disaster grow faster and crews work slower.
+- Named districts that matter: residential areas feel happiness/safety hits harder,
+  Midtown commerce bleeds budget, The Works (industrial) burns hotter, and trouble in
+  the Civic Quarter slows Mayor's Desk cooldowns.
+- Absurd disasters with real mechanics: llamas physically block roads, giant pigeons
+  suppress city income, UFO gawkers congest whole blocks, the parade float gridlocks
+  a major intersection, the coffee crisis makes desk actions dearer and slower, and
+  the mascot's panic accelerates chaos once he escalates.
+- Six Mayor's Desk trade-offs including Overtime Shift (faster crews, unhappier crews)
+  and Call In Reserves (one extra unit of everything, briefly, for a price).
+
+**Visuals**
+- Distinct district looks (green residential, paved commercial, sandstone civic plaza,
+  gravel industrial with smoking factory chimneys), streetlights that glow at night —
+  and go dark in a blackout — crosswalks, a landmark fountain, cracked damaged roads.
+- Dramatic disaster FX: real flames, water spreading onto damaged streets, storm debris,
+  UFO spotlight cone, and a numeric severity chip on every map marker.
+- Emergency vehicles with distinct liveries, dashed route lines and siren pulse rings.
+
+**Accessibility (built for VoiceOver play)**
+- Quick command bar + shortcuts: City Status (C), Incidents (I), Services (S), Desk (M).
+- The map is a single accessible summary, not thousands of tile stops; incidents live in
+  a semantic list sorted most-urgent-first, each one stop with severity and crew status.
+- Careful live announcements (new/escalating/resolved incidents, crew arrivals, danger
+  thresholds) with Minimal / Standard / Detailed verbosity in Settings.
+- Focus management: modals trap and restore focus, the report takes focus at game end,
+  and acting on an incident keeps you oriented in the list.
+- Every button self-describes with effect, cost, cooldown and unavailability reasons.
+- Opening any menu or dialog pauses the simulation — reading is never punished.
+- Reduce Motion setting (defaults to your OS preference), 44px+ touch targets.
+
+Plus everything from V1: day/night cycle, pause/2× speed, pan/pinch-zoom,
+end-of-term ranked Mayor's Report, and localStorage autosave/continue.
 
 ## Controls
 
