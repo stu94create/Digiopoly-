@@ -1,5 +1,6 @@
-// City generation for Port Fiasco: tile grid, road network, districts,
-// special civic buildings and silly street/building names.
+// City generation for Port Fiasco: tile grid, road network, named districts
+// (residential / commercial / civic / industrial), special civic buildings
+// and silly street/building names.
 
 import { makeRng, key } from './utils.js';
 
@@ -19,6 +20,8 @@ const NAMES = {
   office: ['Synergy Tower', 'The Spreadsheet Building', 'Vague Consulting HQ', 'Initech West', 'The Beige Monolith', 'Bureaucracy Plaza', 'Meetings Unlimited', 'The Glass Rectangle', 'Paperwork Point'],
   park: ['Squirrel Commons', 'Damp Meadow Park', 'Memorial Shrub Garden', 'The Good Bench Park', 'Fountain of Mild Interest', 'Kite Accident Field'],
   civic: ['Civic Annex', 'Hall of Records', 'Department of Vibes', 'Municipal Depot'],
+  factory: ['The Gizmo Works', 'Sprocket & Sons', 'Amalgamated Widgets', 'The Steam Concern', 'Novelty Anvil Co.', 'Bulk Soup Refinery'],
+  warehouse: ['Warehouse 13½', 'Big Box Storage', 'Crate Expectations', 'The Forgotten Depot', 'Mystery Pallets Ltd.', 'Boxes About Town'],
 };
 
 const SPECIAL_META = {
@@ -30,15 +33,55 @@ const SPECIAL_META = {
   depot: { name: 'Public Works Depot', h: 1 },
 };
 
+// ------------------------------------------------------------ districts
+
+// Block indices: bi 0..4 (5 column bands), bj 0..3 (4 row bands).
+function districtFor(bi, bj) {
+  if ((bi >= 3 && bj === 0) || (bi === 4 && bj === 1)) return { name: 'The Works', type: 'industrial' };
+  if (bi === 2 && bj === 1) return { name: 'Civic Quarter', type: 'civic' };
+  if (bi >= 1 && bi <= 3 && (bj === 1 || bj === 2)) return { name: 'Midtown', type: 'commercial' };
+  if (bj === 0) return { name: 'Northside', type: 'residential' };
+  if (bj === 3) return { name: 'Sunnyside', type: 'residential' };
+  if (bi === 0) return { name: 'Westbrook', type: 'residential' };
+  return { name: 'Eastfield', type: 'residential' };
+}
+
+function blockOf(x, y) {
+  let bi = 0;
+  for (const c of ROAD_COLS) if (x > c) bi++;
+  let bj = 0;
+  for (const r of ROAD_ROWS) if (y > r) bj++;
+  return [bi, bj];
+}
+
+export function districtAt(city, x, y) {
+  const t = tileAt(city, x, y);
+  return t ? city.districts[t.district] : null;
+}
+
+export const DISTRICT_TYPE_LABEL = {
+  residential: 'Residential', commercial: 'Commercial', civic: 'Civic', industrial: 'Industrial',
+};
+
+// ------------------------------------------------------------ generation
+
 export function generateCity(seed) {
   const rng = makeRng(seed);
   const tiles = [];
   const roads = new Set();
+  const districts = {};
 
   for (let y = 0; y < GRID_H; y++) {
     const row = [];
     for (let x = 0; x < GRID_W; x++) {
-      row.push({ x, y, type: 'grass', variant: rng.next(), h: 0, name: '', special: null, broken: false });
+      const [bi, bj] = blockOf(x, y);
+      const d = districtFor(bi, bj);
+      if (!districts[d.name]) districts[d.name] = d;
+      row.push({
+        x, y, type: 'grass', variant: rng.next(), h: 0, name: '',
+        special: null, broken: false, damaged: false, fountain: false,
+        district: d.name,
+      });
     }
     tiles.push(row);
   }
@@ -63,37 +106,57 @@ export function generateCity(seed) {
     return n;
   };
 
+  const fillTile = (t, dtype, r) => {
+    let bt = null;
+    if (dtype === 'industrial') {
+      if (r < 0.42) bt = 'factory';
+      else if (r < 0.82) bt = 'warehouse';
+      else if (r < 0.9) return; // gravel gap
+      else bt = 'shop';
+    } else if (dtype === 'civic') {
+      if (r < 0.5) bt = 'civic';
+      else if (r < 0.78) bt = 'park';
+      else if (r < 0.9) bt = 'office';
+      else bt = 'shop';
+    } else if (dtype === 'commercial') {
+      if (r < 0.45) bt = 'shop';
+      else if (r < 0.85) bt = 'office';
+      else if (r < 0.93) bt = 'park';
+      else return;
+    } else { // residential
+      if (r < 0.7) bt = 'res';
+      else if (r < 0.84) bt = 'park';
+      else if (r < 0.92) bt = 'shop';
+      else return;
+    }
+    t.type = bt;
+    t.name = takeName(bt);
+    t.h = bt === 'office' ? rngInt(rng, 2, 4)
+      : bt === 'res' ? rngInt(rng, 1, 2)
+      : bt === 'civic' ? 2
+      : bt === 'factory' ? 2
+      : 1;
+  };
+
   for (let bi = 0; bi < colBounds.length - 1; bi++) {
     for (let bj = 0; bj < rowBounds.length - 1; bj++) {
       const x0 = colBounds[bi] + 1, x1 = colBounds[bi + 1] - 1;
       const y0 = rowBounds[bj] + 1, y1 = rowBounds[bj + 1] - 1;
       if (x1 < x0 || y1 < y0) continue;
-
-      const centerish = bi >= 1 && bi <= 3 && bj >= 1 && bj <= 2;
-      let district;
-      if (centerish) district = rng.pick(['shop', 'office', 'shop', 'civic']);
-      else district = rng.chance(0.18) ? 'park' : 'res';
-
+      const d = districtFor(bi, bj);
       for (let y = y0; y <= y1; y++) {
         for (let x = x0; x <= x1; x++) {
-          const t = tiles[y][x];
-          if (district === 'park') {
-            t.type = 'park';
-            t.name = takeName('park');
-            continue;
-          }
-          const r = rng.next();
-          if (r < 0.1) { t.type = 'park'; t.name = takeName('park'); continue; }
-          if (r < 0.16) { continue; } // leave a grassy gap
-          let bt = district;
-          if (district === 'res' && r > 0.9) bt = 'shop';
-          if (district === 'shop' && r > 0.85) bt = 'office';
-          if (district === 'civic' && r > 0.5) bt = rng.pick(['office', 'shop']);
-          t.type = bt;
-          t.name = takeName(bt);
-          t.h = bt === 'office' ? rng.int(2, 4) : bt === 'res' ? rng.int(1, 2) : bt === 'civic' ? 2 : 1;
+          fillTile(tiles[y][x], d.type, rng.next());
         }
       }
+    }
+  }
+
+  // Landmark fountain: first park tile in the Civic Quarter.
+  outer:
+  for (const row of tiles) {
+    for (const t of row) {
+      if (t.type === 'park' && t.district === 'Civic Quarter') { t.fountain = true; break outer; }
     }
   }
 
@@ -104,7 +167,7 @@ export function generateCity(seed) {
     for (let y = 0; y < GRID_H; y++) {
       for (let x = 0; x < GRID_W; x++) {
         const t = tiles[y][x];
-        if (t.type === 'road' || t.special) continue;
+        if (t.type === 'road' || t.special || t.fountain) continue;
         if (!neighbors4(x, y).some(([nx, ny]) => roads.has(key(nx, ny)))) continue;
         const d = (x - px) * (x - px) + (y - py) * (y - py);
         if (d < bestD) { bestD = d; best = t; }
@@ -123,10 +186,12 @@ export function generateCity(seed) {
   place('police', 15, 9);
   place('hospital', 10, 13);
   place('power', 20, 1);
-  place('depot', 2, 13);
+  place('depot', 19, 5);
 
-  return { seed, tiles, roads, specials };
+  return { seed, tiles, roads, specials, districts };
 }
+
+function rngInt(rng, a, b) { return rng.int(a, b); }
 
 export function neighbors4(x, y) {
   return [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]]
@@ -156,7 +221,6 @@ export function nearestRoadAdjacent(city, tile) {
   if (isRoad(city, tile.x, tile.y)) return { x: tile.x, y: tile.y };
   const adj = roadNeighbors(city, tile.x, tile.y);
   if (adj.length) return adj[0];
-  // BFS outward across all tiles until we hit a road.
   const seen = new Set([key(tile.x, tile.y)]);
   const q = [[tile.x, tile.y]];
   while (q.length) {
@@ -235,14 +299,20 @@ export function tileBlurb(t) {
     case 'res': return 'Residential. Rent is “reasonable” and the walls are “load-bearing enough”.';
     case 'shop': return 'A local business. Reviews range from ★☆☆☆☆ to ★★★★★, often for the same visit.';
     case 'office': return 'An office. Somewhere inside, a meeting that could have been an email is happening.';
-    case 'park': return 'Green space. Home to squirrels with strong opinions.';
+    case 'park': return t.fountain
+      ? 'The Fountain of Mild Interest. Wishes granted: none confirmed, two disputed.'
+      : 'Green space. Home to squirrels with strong opinions.';
     case 'civic': return 'Municipal building. Smells faintly of laminated forms.';
+    case 'factory': return 'A factory. Produces widgets, steam, and the occasional mystery clang.';
+    case 'warehouse': return 'A warehouse. Contains boxes of boxes, in boxes.';
     case 'fire': return 'Fire Station 7. The crew is playing cards and pretending not to hope for action.';
     case 'police': return 'Police HQ. The donut budget is classified.';
     case 'hospital': return 'The hospital. Please stop testing the sinkhole with your bicycle.';
     case 'power': return 'The power plant. Do not lick anything in here.';
     case 'depot': return 'Public Works Depot. Where potholes go to be argued about.';
-    case 'road': return 'A road. Technically. The line between “road” and “suggestion” is thin here.';
+    case 'road': return t.damaged
+      ? 'A damaged road. Driving here is now a percussion instrument.'
+      : 'A road. Technically. The line between “road” and “suggestion” is thin here.';
     case 'rubble': return 'Rubble. This used to be a building. The city holds a small grudge.';
     default: return 'Grass. Municipal, load-bearing grass.';
   }
@@ -250,6 +320,7 @@ export function tileBlurb(t) {
 
 export const TYPE_LABEL = {
   res: 'Residential', shop: 'Shop', office: 'Office', park: 'Park', civic: 'Civic',
+  factory: 'Factory', warehouse: 'Warehouse',
   fire: 'Fire Station', police: 'Police', hospital: 'Hospital', power: 'Utility',
   depot: 'Public Works', road: 'Road', grass: 'Open space', rubble: 'Rubble',
 };

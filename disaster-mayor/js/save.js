@@ -1,7 +1,7 @@
 // Simple localStorage persistence: settings, continue-game snapshot,
 // and a best-results leaderboard.
 
-const KEY_SETTINGS = 'dm_settings_v1';
+const KEY_SETTINGS = 'dm_settings_v2';
 const KEY_SAVE = 'dm_save_v1';
 const KEY_BEST = 'dm_best_v1';
 
@@ -14,10 +14,22 @@ const safeSet = (k, v) => {
 
 // ---------- settings ----------
 
-export const DEFAULT_SETTINGS = { effects: 'high', shake: true, autosave: true };
+const prefersReducedMotion = () => {
+  try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; }
+};
+
+export function defaultSettings() {
+  return {
+    effects: 'high',
+    shake: true,
+    autosave: true,
+    reduceMotion: prefersReducedMotion(),
+    verbosity: 'standard',
+  };
+}
 
 export function loadSettings() {
-  return { ...DEFAULT_SETTINGS, ...(safeGet(KEY_SETTINGS) || {}) };
+  return { ...defaultSettings(), ...(safeGet(KEY_SETTINGS) || {}) };
 }
 export function saveSettings(s) { safeSet(KEY_SETTINGS, s); }
 
@@ -25,22 +37,23 @@ export function saveSettings(s) { safeSet(KEY_SETTINGS, s); }
 
 export function saveRun(state) {
   if (state.over || state.attract) return;
-  const brokenTiles = [];
+  const changedTiles = [];
   for (const row of state.city.tiles) {
     for (const t of row) {
-      if (t.type === 'rubble') brokenTiles.push({ x: t.x, y: t.y, rubble: true });
-      else if (t.broken) brokenTiles.push({ x: t.x, y: t.y, broken: true });
+      if (t.type === 'rubble') changedTiles.push({ x: t.x, y: t.y, rubble: true });
+      else if (t.broken) changedTiles.push({ x: t.x, y: t.y, broken: true });
+      else if (t.damaged) changedTiles.push({ x: t.x, y: t.y, damaged: true });
     }
   }
   safeSet(KEY_SAVE, {
-    v: 1,
+    v: 2,
     seed: state.seed,
     time: state.time,
     stats: state.stats,
     score: state.score,
     spawnT: state.spawnT,
     cooldowns: state.cooldowns,
-    brokenTiles,
+    brokenTiles: changedTiles,
     incidents: state.incidents.map((i) => ({
       defId: i.def.id, tile: i.tile, sev: Math.round(i.sev), escalated: i.escalated,
     })),

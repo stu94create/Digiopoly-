@@ -71,6 +71,12 @@ export function setupInput(canvas, renderer, handlers) {
 export function setupKeyboard(handlers) {
   window.addEventListener('keydown', (e) => {
     if (e.target && ['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const lower = e.key.toLowerCase();
+    if (['c', 'i', 's', 'm'].includes(lower)) {
+      handlers.onCommand(lower);
+      return;
+    }
     switch (e.key) {
       case ' ':
         e.preventDefault();
